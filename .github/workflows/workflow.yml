@@ -37,7 +37,7 @@ jobs:
       # Is Fleet up? The homelab stack is torn down between sessions, and a
       # torn-down Fleet has nothing to reconcile. A nightly run skips cleanly;
       # a push, pull request or manual run fails with a clear message instead
-      # of silently applying nothing. The URL is never printed.
+      # of silently applying nothing.
       ###########################################################
       - name: Check that Fleet is reachable
         id: fleet
