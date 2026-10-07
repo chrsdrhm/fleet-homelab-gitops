@@ -32,6 +32,7 @@ Because `default.yml` contains `org_settings`, **anything not defined in this re
 - **No secret is stored in this repo.** Anything sensitive is a `$VARIABLE` in the YAML that the workflow fills in from GitHub Actions secrets: the Fleet API token and the identity provider's metadata URL. (Enroll secrets are not here at all: Fleet excludes them from GitOps by default and manages them itself.)
 - The API token belongs to a dedicated API-only Fleet user with the `gitops` role, which can change configuration but cannot log in to the UI.
 - The workflow runs with a read-only `GITHUB_TOKEN`, and every action is pinned to a commit SHA.
+- The Fleet server sits behind a WAF that only allows US traffic, and GitHub's runners can be anywhere, so the workflow sends a secret header (a repository secret) that lets its requests past the country check. Fleet still requires the API token on every call.
 - Pull requests from forks get no secrets, workflow runs from outside contributors need my approval, and only I can merge.
 - If you spot something that looks like a security problem, please use this repo's **Security** tab to report it privately instead of opening a public issue.
 

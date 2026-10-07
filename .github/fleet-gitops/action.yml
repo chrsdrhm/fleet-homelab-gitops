@@ -20,7 +20,7 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       run: |
         FLEET_URL="$(printf '%s' "$FLEET_URL" | sed 's:/*$::')"
-        FLEET_VERSION="$(curl "$FLEET_URL/api/v1/fleet/version" --header "Authorization: Bearer $FLEET_API_TOKEN" --fail --silent | jq --raw-output '.version')"
+        FLEET_VERSION="$(curl "$FLEET_URL/api/v1/fleet/version" --header "Authorization: Bearer $FLEET_API_TOKEN" --header "x-fleet-ci: ${FLEET_CI_HEADER:-}" --fail --silent | jq --raw-output '.version')"
         DEFAULT_FLEETCTL_VERSION="latest"
 
         # Decide which fleetctl version to install:
@@ -48,7 +48,14 @@ runs:
     - name: Configure fleetctl
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: fleetctl config set --address ${{ env.FLEET_URL }} --token ${{ env.FLEET_API_TOKEN }}
+      # Values come from the environment, not interpolated into the script. The custom
+      # header (when set) is sent on every fleetctl request, to get past the WAF.
+      run: |
+        if [ -n "${FLEET_CI_HEADER:-}" ]; then
+          fleetctl config set --address "$FLEET_URL" --token "$FLEET_API_TOKEN" --custom-header "x-fleet-ci:${FLEET_CI_HEADER}"
+        else
+          fleetctl config set --address "$FLEET_URL" --token "$FLEET_API_TOKEN"
+        fi
 
     - name: Run fleetctl gitops commands
       shell: bash

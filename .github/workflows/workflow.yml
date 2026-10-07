@@ -43,9 +43,11 @@ jobs:
         id: fleet
         env:
           FLEET_URL: ${{ secrets.FLEET_URL }}
+          FLEET_CI_HEADER: ${{ secrets.FLEET_CI_HEADER }}
           EVENT: ${{ github.event_name }}
         run: |
-          code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' "${FLEET_URL%/}/healthz" || true)
+          # x-fleet-ci lets this runner past the WAF's US-only rule (runners can be anywhere).
+          code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' -H "x-fleet-ci: ${FLEET_CI_HEADER}" "${FLEET_URL%/}/healthz" || true)
           if [ "$code" = "200" ]; then
             echo "up=true" >> "$GITHUB_OUTPUT"
             echo "Fleet is up."
@@ -106,3 +108,9 @@ jobs:
           ###########################################################
           FLEET_OKTA_METADATA_URL: ${{ secrets.FLEET_OKTA_METADATA_URL }}
           FLEET_IDP_IMAGE_URL: ${{ secrets.FLEET_IDP_IMAGE_URL }}
+
+          ###########################################################
+          # Secret header that lets GitHub's runners (in any country) past the
+          # Fleet WAF's US-only rule. Sent by the action on every request.
+          ###########################################################
+          FLEET_CI_HEADER: ${{ secrets.FLEET_CI_HEADER }}
