@@ -49,7 +49,7 @@ org_settings:
     entity_id: "$FLEET_URL" # the Fleet server URL, a repository secret; must equal the Okta app's audience exactly (no trailing slash)
     metadata_url: "$FLEET_OKTA_METADATA_URL" # a repository secret: it embeds the Okta org name and app key
 
-  # Enroll secrets are deliberately NOT here: Fleet's change-management settings
+  # Enroll secrets are not set here: Fleet's change-management settings
   # exclude them from GitOps by default (`gitops.exceptions.secrets: true`), and a
   # `secrets:` key makes `fleetctl gitops` fail. They are managed in Fleet itself.
 
