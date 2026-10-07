@@ -33,10 +33,36 @@ jobs:
       - name: Checkout this repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
+      ###########################################################
+      # Is Fleet up? The homelab stack is torn down between sessions, and a
+      # torn-down Fleet has nothing to reconcile. A nightly run skips cleanly;
+      # a push, pull request or manual run fails with a clear message instead
+      # of silently applying nothing. The URL is never printed.
+      ###########################################################
+      - name: Check that Fleet is reachable
+        id: fleet
+        env:
+          FLEET_URL: ${{ secrets.FLEET_URL }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' "${FLEET_URL%/}/healthz" || true)
+          if [ "$code" = "200" ]; then
+            echo "up=true" >> "$GITHUB_OUTPUT"
+            echo "Fleet is up."
+          elif [ "$EVENT" = "schedule" ]; then
+            echo "up=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Fleet is down::Skipping the nightly reconcile: the stack is torn down, so there is nothing to do."
+          else
+            echo "::error title=Fleet is down::Fleet did not answer /healthz (HTTP $code). Bring the stack up (scripts/up.sh in the infra repo), then re-run this workflow."
+            exit 1
+          fi
+
       - name: Make github action script executable
+        if: steps.fleet.outputs.up == 'true'
         run: chmod +x ./.github/fleet-gitops/gitops.sh
 
       - name: Apply latest configuration to Fleet
+        if: steps.fleet.outputs.up == 'true'
         uses: ./.github/fleet-gitops
         with:
           # Run GitOps in dry-run mode for pull requests.
