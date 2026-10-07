@@ -48,6 +48,13 @@ jobs:
         run: |
           # x-fleet-ci lets this runner past the WAF's US-only rule (runners can be anywhere).
           code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' -H "x-fleet-ci: ${FLEET_CI_HEADER}" "${FLEET_URL%/}/healthz" || true)
+          # Pull requests from Dependabot or forks run without secrets, so there is no
+          # server to dry-run against: skip cleanly instead of failing the check.
+          if [ -z "${FLEET_URL}" ] && [ "$EVENT" = "pull_request" ]; then
+            echo "up=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=No secrets::This pull request runs without repository secrets (Dependabot or a fork), so the dry run is skipped."
+            exit 0
+          fi
           if [ "$code" = "200" ]; then
             echo "up=true" >> "$GITHUB_OUTPUT"
             echo "Fleet is up."
