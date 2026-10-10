@@ -35,9 +35,9 @@ jobs:
 
       ###########################################################
       # Is Fleet up? The homelab stack is torn down between sessions, and a
-      # torn-down Fleet has nothing to reconcile. A nightly run or a pull request
-      # skips cleanly; a push or manual run fails with a clear message instead
-      # of silently applying nothing.
+      # torn-down Fleet has nothing to reconcile, so any run then skips with a
+      # warning instead of failing. Whatever is on main is applied by the run
+      # that up.sh (infra repo) starts after the next rebuild.
       ###########################################################
       - name: Check that Fleet is reachable
         id: fleet
@@ -46,30 +46,21 @@ jobs:
           FLEET_CI_HEADER: ${{ secrets.FLEET_CI_HEADER }}
           EVENT: ${{ github.event_name }}
         run: |
-          # x-fleet-ci lets this runner past the WAF's US-only rule (runners can be anywhere).
-          code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' -H "x-fleet-ci: ${FLEET_CI_HEADER}" "${FLEET_URL%/}/healthz" || true)
           # Pull requests from Dependabot or forks run without secrets, so there is no
-          # server to dry-run against: skip cleanly instead of failing the check.
+          # server to dry-run against.
           if [ -z "${FLEET_URL}" ] && [ "$EVENT" = "pull_request" ]; then
             echo "up=false" >> "$GITHUB_OUTPUT"
             echo "::notice title=No secrets::This pull request runs without repository secrets (Dependabot or a fork), so the dry run is skipped."
             exit 0
           fi
+          # x-fleet-ci lets this runner past the WAF's US-only rule (runners can be anywhere).
+          code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' -H "x-fleet-ci: ${FLEET_CI_HEADER}" "${FLEET_URL%/}/healthz" || true)
           if [ "$code" = "200" ]; then
             echo "up=true" >> "$GITHUB_OUTPUT"
             echo "Fleet is up."
-          elif [ "$EVENT" = "schedule" ]; then
-            echo "up=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Fleet is down::Skipping the nightly reconcile: the stack is torn down, so there is nothing to do."
-          elif [ "$EVENT" = "pull_request" ]; then
-            # main requires this check and has no bypass, so a PR must be able to merge while
-            # the stack is torn down. The change is applied and checked by the run up.sh
-            # starts after the next rebuild.
-            echo "up=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Fleet is down::Dry run skipped: the stack is torn down. The change is applied and checked by the run that up.sh starts after the next rebuild."
           else
-            echo "::error title=Fleet is down::Fleet did not answer /healthz (HTTP $code). Bring the stack up (scripts/up.sh in the infra repo), then re-run this workflow."
-            exit 1
+            echo "up=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Fleet is down::Skipped (HTTP $code): the stack is torn down. The run that up.sh starts after the next rebuild applies main."
           fi
 
       - name: Make github action script executable
