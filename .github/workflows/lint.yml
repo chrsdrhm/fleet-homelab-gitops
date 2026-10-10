@@ -1,0 +1,51 @@
+# Checks on every pull request, separate from Fleet's GitOps workflow (workflow.yml).
+# Everything lives in checks/ (see checks/README.md): private values, shellcheck,
+# actionlint and zizmor, through checks/run.sh, which also runs locally. Without
+# checks/, this job has nothing to do and passes.
+name: Lint
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  lint:
+    name: gitops-lint
+    runs-on: ubuntu-24.04 # pinned: ubuntu-latest moves to Ubuntu 26 from 2026-10-19
+    timeout-minutes: 10
+    concurrency:
+      group: gitops-lint-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # the private-values check diffs against the base branch
+
+      - name: Install check tools
+        if: hashFiles('checks/install-tools.sh') != ''
+        run: checks/install-tools.sh
+
+      - name: Run checks
+        if: hashFiles('checks/run.sh') != ''
+        env:
+          PRIVATE_HASHES: ${{ secrets.PRIVATE_HASHES }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          export FLEET_HOMELAB_PRIVATE_HASHES="$RUNNER_TEMP/private-hashes"
+          printf '%s\n' "$PRIVATE_HASHES" > "$FLEET_HOMELAB_PRIVATE_HASHES"
+          if [ -z "$PRIVATE_HASHES" ]; then
+            echo "::notice title=Patterns only::No PRIVATE_HASHES secret here (for example, a fork), so the private-values check uses its patterns only."
+          fi
+          checks/run.sh

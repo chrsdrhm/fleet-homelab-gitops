@@ -34,3 +34,5 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+__pycache__/
+.check-tools/
