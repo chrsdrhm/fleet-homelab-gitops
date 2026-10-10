@@ -44,7 +44,7 @@ Because `default.yml` contains `org_settings`, **anything not defined in this re
 - **Nothing sensitive or identifying in the YAML.** The server URL and the identity provider's URLs are `$VARIABLES` filled in from GitHub Actions secrets, and the API token is passed in by the workflow. Enroll secrets aren't here at all; Fleet manages them itself.
 - **A least-privilege token.** It belongs to an API-only Fleet user with the `gitops` role, which can change configuration but can't log in to the UI.
 - **Through the WAF by header, not by opening it up.** Fleet only accepts US traffic, and GitHub's runners can be anywhere, so the workflow sends a secret header that lets its requests past the country check. Fleet still requires the API token on every call.
-- **Found a problem?** Please report it privately through this repo's **Security** tab instead of opening a public issue.
+- **Found a problem?** Please [report it privately](https://github.com/chrsdrhm/fleet-homelab-gitops/security/advisories/new) through this repo's **Security** tab instead of opening a public issue.
 
 ## Built with AI assistance
 
