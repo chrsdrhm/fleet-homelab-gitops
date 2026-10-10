@@ -1,9 +1,7 @@
-# Checks on every pull request, separate from Fleet's GitOps workflow (workflow.yml):
-#  - private values: fails if the PR adds an AWS account ID, Okta org or app ID, personal
-#    email or signed token (patterns), or a value listed by hash in the PRIVATE_HASHES
-#    secret, in a changed line, file name, commit message, or its title and body;
-#  - actionlint (workflow files, with shellcheck on run: blocks) and shellcheck;
-#  - zizmor (security audit of the workflows and actions).
+# Checks on every pull request, separate from Fleet's GitOps workflow (workflow.yml).
+# Everything lives in checks/ (see checks/README.md): private values, shellcheck,
+# actionlint and zizmor, through checks/run.sh, which also runs locally. Without
+# checks/, this job has nothing to do and passes.
 name: Lint
 
 on:
@@ -31,60 +29,23 @@ jobs:
           persist-credentials: false
           fetch-depth: 0 # the private-values check diffs against the base branch
 
-      # Patterns (account IDs, Okta org and app IDs, personal emails, signed tokens) always;
-      # values listed by SHA-256 hash in the PRIVATE_HASHES secret when it is set. No
-      # plaintext anywhere; reports where, never the value. The self-test runs first.
-      - name: Check for private values
+      - name: Install check tools
+        if: hashFiles('checks/install-tools.sh') != ''
+        run: checks/install-tools.sh
+
+      - name: Run checks
+        if: hashFiles('checks/run.sh') != ''
         env:
           PRIVATE_HASHES: ${{ secrets.PRIVATE_HASHES }}
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
           TITLE: ${{ github.event.pull_request.title }}
           BODY: ${{ github.event.pull_request.body }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          python3 .github/scripts/test_check_private_values.py
           export FLEET_HOMELAB_PRIVATE_HASHES="$RUNNER_TEMP/private-hashes"
           printf '%s\n' "$PRIVATE_HASHES" > "$FLEET_HOMELAB_PRIVATE_HASHES"
           if [ -z "$PRIVATE_HASHES" ]; then
-            echo "::notice title=Patterns only::No PRIVATE_HASHES secret here (for example, a fork), so only the pattern rules run."
+            echo "::notice title=Patterns only::No PRIVATE_HASHES secret here (for example, a fork), so the private-values check uses its patterns only."
           fi
-          fail=0
-          check() { python3 .github/scripts/check-private-values.py "$1" || fail=1; }
-          git diff --name-only "$BASE...$HEAD" | check "the changed file names"
-          while IFS= read -r f; do
-            git diff -U0 "$BASE...$HEAD" -- "$f" | grep '^+' | grep -v '^+++' | check "the added lines of $f"
-          done < <(git diff --name-only --diff-filter=d "$BASE...$HEAD")
-          git log --format=%B "$BASE..$HEAD" | check "the commit messages"
-          printf '%s\n%s\n' "$TITLE" "$BODY" | check "the pull request title and body"
-          rm -f "$FLEET_HOMELAB_PRIVATE_HASHES"
-          if [ "$fail" -ne 0 ]; then
-            echo "::error title=Private value found::Remove it from the pull request (and from the history of its commits)."
-          fi
-          exit "$fail"
-
-      # Our scripts only; .github/fleet-gitops/ is Fleet's scaffold, kept as generated.
-      - name: shellcheck
-        run: shellcheck .githooks/*
-
-      # A release binary checked against its published SHA-256 checksum. Dependabot
-      # cannot update it: bump the version and checksum together by hand.
-      - name: Install actionlint
-        run: |
-          mkdir -p "$RUNNER_TEMP/bin"
-          cd "$RUNNER_TEMP"
-          curl -fsSLo actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
-          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  actionlint.tar.gz" | sha256sum -c -
-          tar xzf actionlint.tar.gz -C bin actionlint
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
-
-      - name: actionlint
-        run: actionlint
-
-      # The official image, pinned by digest.
-      - name: zizmor
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          docker run --rm -v "$PWD:/repo:ro" -w /repo -e GH_TOKEN \
-            ghcr.io/zizmorcore/zizmor@sha256:a2eb396d886c053073405c7a980f2139ba2248ec172243cfa3841e57196e8101 \
-            --no-progress --format github .
+          checks/run.sh
