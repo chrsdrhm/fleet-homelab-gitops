@@ -29,7 +29,13 @@ Fleet's [GitOps reference](https://fleetdm.com/docs/configuration/yaml-files) li
 | Nightly, and manual | Same as a push, to correct any drift made in the UI. |
 | After a rebuild | The infra repo's `up.sh` starts a run, so a change pushed while the stack was down is applied as soon as Fleet is back. |
 
-The Fleet server is torn down between sessions. Every run first checks that Fleet answers. If it does not (the stack is torn down), the run is skipped with a **warning** instead of failing, and the run that the infra repo's `up.sh` starts after the next rebuild applies whatever is on `main`. Pull requests without secrets (Dependabot or forks) skip their dry run with a notice.
+### While the stack is down
+
+The Fleet server is torn down between sessions, and this repo is built for that:
+
+- **No failed runs.** Every run first checks that Fleet answers. If it doesn't, the run is skipped with a **warning** instead of failing, so a pull request still passes its check and can be merged.
+- **Nothing is lost.** Changes merged while Fleet is down are applied as soon as it's back: the infra repo's `up.sh` starts a run after every rebuild, and that run applies whatever is on `main`.
+- Pull requests without secrets (Dependabot or forks) skip their dry run with a notice.
 
 Because `default.yml` contains `org_settings`, **anything not defined in this repo is removed from Fleet on apply**, including fleets created only in the UI. That is the point of GitOps, and it is also why edits belong here and not in the console.
 
