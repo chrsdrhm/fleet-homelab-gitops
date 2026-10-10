@@ -23,7 +23,7 @@ Everything Fleet can manage from Git is described here in YAML. A GitHub Actions
 | Nightly, and manual | Same as a push, to correct any drift made in the UI. |
 | After a rebuild | The infra repo's `up.sh` starts a run, so a change pushed while the stack was down is applied as soon as Fleet is back. |
 
-The Fleet server is torn down between sessions. Every run first checks that Fleet answers: if it does not, a **nightly** run skips cleanly (there is nothing to reconcile), while a **push, pull request or manual** run fails with a message to bring the stack up first.
+The Fleet server is torn down between sessions. Every run first checks that Fleet answers. If it does not, a **nightly** run skips cleanly (there is nothing to reconcile) and a **pull request** passes with a notice (`main` requires the check, so changes can merge while the stack is down; the run after the next rebuild applies and checks them), while a **push or manual** run fails with a message to bring the stack up first.
 
 Because `default.yml` contains `org_settings`, **anything not defined in this repo is removed from Fleet on apply**, including fleets created only in the UI. That is the point of GitOps, and it is also why edits belong here and not in the console.
 
