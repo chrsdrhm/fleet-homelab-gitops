@@ -18,7 +18,7 @@ The layout is the one `fleetctl new` generates:
 
 Fleet's [GitOps reference](https://fleetdm.com/docs/configuration/yaml-files) lists everything each file can hold.
 
-**Single sign-on is optional.** Fleet works without it: people sign in with a password instead. To run this without Okta, set `enable_sso: false` under `sso_settings` in `default.yml` (or remove the `sso_settings` block) and leave out the `FLEET_OKTA_METADATA_URL` and `FLEET_IDP_IMAGE_URL` secrets; the pull request's dry run shows whether Fleet accepts the change. Fleet's SSO is standard SAML, so another identity provider can take Okta's place by pointing `metadata_url` at its metadata. The Okta side of this setup is Terraform in the infra repo's [`okta/`](https://github.com/chrsdrhm/fleet-homelab-infra/tree/main/okta), which is optional there too.
+**Single sign-on is optional.** Fleet works without it: people sign in with a password instead. I use Okta because it makes the lab more like a real deployment, where people sign in through the company's identity provider and get their Fleet role from it. To run this without Okta, set `enable_sso: false` under `sso_settings` in `default.yml` (or remove the `sso_settings` block) and leave out the `FLEET_OKTA_METADATA_URL` and `FLEET_IDP_IMAGE_URL` secrets; the pull request's dry run shows whether Fleet accepts the change. Fleet's SSO is standard SAML, so another identity provider can take Okta's place by pointing `metadata_url` at its metadata. The Okta side of this setup is Terraform in the infra repo's [`okta/`](https://github.com/chrsdrhm/fleet-homelab-infra/tree/main/okta), which is optional there too.
 
 ## How it runs
 
