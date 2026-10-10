@@ -10,9 +10,15 @@
 
 Everything Fleet can manage from Git is described here in YAML. A GitHub Actions workflow applies it to the server, so a change goes through a pull request, a dry run, and a merge, and the history is the audit trail.
 
-- **Org settings** (`default.yml`): organization name, single sign-on (Okta SAML with just-in-time provisioning), 
-- **Fleets** (`fleets/`): one fleet, "Workstations", covering all my devices.
-- **Labels, policies, reports, profiles, scripts and software** (`labels/`, `platforms/`): the scaffold's layout, filled in as I go.
+The layout is the one `fleetctl new` generates:
+
+- **`default.yml`**: organization-wide settings, such as single sign-on and MDM.
+- **`fleets/`**: one file per fleet, each with its own settings, policies and software.
+- **`labels/`** and **`platforms/`**: labels, and per-platform profiles, scripts, software, policies and reports that the YAML files refer to.
+
+Fleet's [GitOps reference](https://fleetdm.com/docs/configuration/yaml-files) lists everything each file can hold.
+
+**Single sign-on is optional.** Fleet works without it: people sign in with a password instead. I use Okta because it makes the lab more like a real deployment, where people sign in through the company's identity provider and get their Fleet role from it. To run this without Okta, set `enable_sso: false` under `sso_settings` in `default.yml` (or remove the `sso_settings` block) and leave out the `FLEET_OKTA_METADATA_URL` and `FLEET_IDP_IMAGE_URL` secrets; the pull request's dry run shows whether Fleet accepts the change. Fleet's SSO is standard SAML, so another identity provider can take Okta's place by pointing `metadata_url` at its metadata. The Okta side of this setup is Terraform in the infra repo's [`okta/`](https://github.com/chrsdrhm/fleet-homelab-infra/tree/main/okta), which is optional there too.
 
 ## How it runs
 
@@ -29,7 +35,7 @@ Because `default.yml` contains `org_settings`, **anything not defined in this re
 
 ## Security notes
 
-- **No secret is stored in this repo.** Anything sensitive is a `$VARIABLE` in the YAML that the workflow fills in from GitHub Actions secrets: the Fleet API token and the identity provider's metadata URL. (Enroll secrets are not here at all: Fleet excludes them from GitOps by default and manages them itself.)
+- **No secret is stored in this repo.** Anything sensitive or identifying comes from GitHub Actions secrets: the Fleet API token (passed to `fleetctl` by the workflow), and the server URL and the identity provider's metadata and logo URLs, which the YAML references as `$VARIABLES`. (Enroll secrets are not here at all: Fleet excludes them from GitOps by default and manages them itself.)
 - The API token belongs to a dedicated API-only Fleet user with the `gitops` role, which can change configuration but cannot log in to the UI.
 - The workflow runs with a read-only `GITHUB_TOKEN`, and every action is pinned to a commit SHA.
 - The Fleet server sits behind a WAF that only allows US traffic, and GitHub's runners can be anywhere, so the workflow sends a secret header (a repository secret) that lets its requests past the country check. Fleet still requires the API token on every call.
