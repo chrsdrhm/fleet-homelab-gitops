@@ -14,7 +14,7 @@ The layout is the one `fleetctl new` generates:
 
 - **`default.yml`**: organization-wide settings, such as single sign-on and MDM.
 - **`fleets/`**: one file per fleet, each with its own settings, policies and software.
-- **`labels/`** and **`platforms/`**: labels, and the profiles, scripts, policies and reports the YAML files refer to.
+- **`labels/`** and **`platforms/`**: labels, and per-platform profiles, scripts, software, policies and reports that the YAML files refer to.
 
 Fleet's [GitOps reference](https://fleetdm.com/docs/configuration/yaml-files) lists everything each file can hold.
 
@@ -35,7 +35,7 @@ Because `default.yml` contains `org_settings`, **anything not defined in this re
 
 ## Security notes
 
-- **No secret is stored in this repo.** Anything sensitive is a `$VARIABLE` in the YAML that the workflow fills in from GitHub Actions secrets: the Fleet API token and the identity provider's metadata URL. (Enroll secrets are not here at all: Fleet excludes them from GitOps by default and manages them itself.)
+- **No secret is stored in this repo.** Anything sensitive or identifying comes from GitHub Actions secrets: the Fleet API token (passed to `fleetctl` by the workflow), and the server URL and the identity provider's metadata and logo URLs, which the YAML references as `$VARIABLES`. (Enroll secrets are not here at all: Fleet excludes them from GitOps by default and manages them itself.)
 - The API token belongs to a dedicated API-only Fleet user with the `gitops` role, which can change configuration but cannot log in to the UI.
 - The workflow runs with a read-only `GITHUB_TOKEN`, and every action is pinned to a commit SHA.
 - The Fleet server sits behind a WAF that only allows US traffic, and GitHub's runners can be anywhere, so the workflow sends a secret header (a repository secret) that lets its requests past the country check. Fleet still requires the API token on every call.
