@@ -10,9 +10,11 @@
 
 Everything Fleet can manage from Git is described here in YAML. A GitHub Actions workflow applies it to the server, so a change goes through a pull request, a dry run, and a merge, and the history is the audit trail.
 
-- **Org settings** (`default.yml`): organization name, single sign-on (Okta SAML with just-in-time provisioning), 
+- **Org settings** (`default.yml`): organization name, single sign-on (Okta SAML with just-in-time provisioning), and Windows MDM.
 - **Fleets** (`fleets/`): one fleet, "Workstations", covering all my devices.
 - **Labels, policies, reports, profiles, scripts and software** (`labels/`, `platforms/`): the scaffold's layout, filled in as I go.
+
+**Single sign-on is optional.** Fleet works without it: people sign in with a password instead. To run this without Okta, set `enable_sso: false` under `sso_settings` in `default.yml` (or remove the `sso_settings` block) and leave out the `FLEET_OKTA_METADATA_URL` and `FLEET_IDP_IMAGE_URL` secrets; the pull request's dry run shows whether Fleet accepts the change. Fleet's SSO is standard SAML, so another identity provider can take Okta's place by pointing `metadata_url` at its metadata. The Okta side of this setup is Terraform in the infra repo's [`okta/`](https://github.com/chrsdrhm/fleet-homelab-infra/tree/main/okta), which is optional there too.
 
 ## How it runs
 
