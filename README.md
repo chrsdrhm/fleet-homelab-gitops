@@ -41,12 +41,10 @@ Because `default.yml` contains `org_settings`, **anything not defined in this re
 
 ## Security notes
 
-- **No secret is stored in this repo.** Anything sensitive or identifying comes from GitHub Actions secrets: the Fleet API token (passed to `fleetctl` by the workflow), and the server URL and the identity provider's metadata and logo URLs, which the YAML references as `$VARIABLES`. (Enroll secrets are not here at all: Fleet excludes them from GitOps by default and manages them itself.)
-- The API token belongs to a dedicated API-only Fleet user with the `gitops` role, which can change configuration but cannot log in to the UI.
-- The workflow runs with a read-only `GITHUB_TOKEN`, and every action is pinned to a commit SHA.
-- The Fleet server sits behind a WAF that only allows US traffic, and GitHub's runners can be anywhere, so the workflow sends a secret header (a repository secret) that lets its requests past the country check. Fleet still requires the API token on every call.
-- Pull requests from forks get no secrets, workflow runs from outside contributors need my approval, and only I can merge.
-- If you spot something that looks like a security problem, please use this repo's **Security** tab to report it privately instead of opening a public issue.
+- **Nothing sensitive or identifying in the YAML.** The server URL and the identity provider's URLs are `$VARIABLES` filled in from GitHub Actions secrets, and the API token is passed in by the workflow. Enroll secrets aren't here at all; Fleet manages them itself.
+- **A least-privilege token.** It belongs to an API-only Fleet user with the `gitops` role, which can change configuration but can't log in to the UI.
+- **Through the WAF by header, not by opening it up.** Fleet only accepts US traffic, and GitHub's runners can be anywhere, so the workflow sends a secret header that lets its requests past the country check. Fleet still requires the API token on every call.
+- **Found a problem?** Please report it privately through this repo's **Security** tab instead of opening a public issue.
 
 ## Built with AI assistance
 
