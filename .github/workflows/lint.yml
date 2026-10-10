@@ -1,0 +1,88 @@
+# Checks on every pull request, separate from Fleet's GitOps workflow (workflow.yml):
+#  - private strings: fails if the PR adds any value from the PRIVATE_STRINGS secret
+#    (the hostname, account ID, Okta org and so on) in a changed line, a file name, a
+#    commit message, or its title and body; reports where, never the value;
+#  - actionlint (workflow files, with shellcheck on run: blocks) and shellcheck;
+#  - zizmor (security audit of the workflows and actions).
+name: Lint
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  lint:
+    name: gitops-lint
+    runs-on: ubuntu-24.04 # pinned: ubuntu-latest moves to Ubuntu 26 from 2026-10-19
+    timeout-minutes: 10
+    concurrency:
+      group: gitops-lint-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # the private-strings check diffs against the base branch
+
+      # Runs without the secret (forks, Dependabot) as a skip with a notice.
+      - name: Check for private strings
+        env:
+          PRIVATE_STRINGS: ${{ secrets.PRIVATE_STRINGS }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if [ -z "$PRIVATE_STRINGS" ]; then
+            echo "::notice title=Private-strings check skipped::This pull request runs without the PRIVATE_STRINGS secret (for example, from a fork)."
+            exit 0
+          fi
+          patterns="$RUNNER_TEMP/private-strings"
+          printf '%s\n' "$PRIVATE_STRINGS" > "$patterns"
+          fail=0
+          check() { .github/scripts/check-private-strings.sh "$patterns" "$1" || fail=1; }
+          git diff --name-only "$BASE...$HEAD" | check "the changed file names"
+          while IFS= read -r f; do
+            git diff -U0 "$BASE...$HEAD" -- "$f" | grep '^+' | grep -v '^+++' | check "the added lines of $f"
+          done < <(git diff --name-only --diff-filter=d "$BASE...$HEAD")
+          git log --format=%B "$BASE..$HEAD" | check "the commit messages"
+          printf '%s\n%s\n' "$TITLE" "$BODY" | check "the pull request title and body"
+          rm -f "$patterns"
+          if [ "$fail" -ne 0 ]; then
+            echo "::error title=Private string found::Remove it from the pull request (and from the history of its commits)."
+          fi
+          exit "$fail"
+
+      # Our scripts only; .github/fleet-gitops/ is Fleet's scaffold, kept as generated.
+      - name: shellcheck
+        run: shellcheck .github/scripts/*.sh .githooks/*
+
+      # A release binary checked against its published SHA-256 checksum. Dependabot
+      # cannot update it: bump the version and checksum together by hand.
+      - name: Install actionlint
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          cd "$RUNNER_TEMP"
+          curl -fsSLo actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  actionlint.tar.gz" | sha256sum -c -
+          tar xzf actionlint.tar.gz -C bin actionlint
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      - name: actionlint
+        run: actionlint
+
+      # The official image, pinned by digest.
+      - name: zizmor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          docker run --rm -v "$PWD:/repo:ro" -w /repo -e GH_TOKEN \
+            ghcr.io/zizmorcore/zizmor@sha256:a2eb396d886c053073405c7a980f2139ba2248ec172243cfa3841e57196e8101 \
+            --no-progress --format github .

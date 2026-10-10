@@ -5,3 +5,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Wait a week before proposing a new release, so a hijacked one is usually caught
+    # and pulled before it reaches this repo.
+    cooldown:
+      default-days: 7
