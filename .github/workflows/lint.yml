@@ -1,7 +1,7 @@
 # Checks on every pull request, separate from Fleet's GitOps workflow (workflow.yml):
-#  - private strings: fails if the PR adds any value from the PRIVATE_STRINGS secret
-#    (the hostname, account ID, Okta org and so on) in a changed line, a file name, a
-#    commit message, or its title and body; reports where, never the value;
+#  - private values: fails if the PR adds an AWS account ID, Okta org or app ID, personal
+#    email or signed token (patterns), or a value listed by hash in the PRIVATE_HASHES
+#    secret, in a changed line, file name, commit message, or its title and body;
 #  - actionlint (workflow files, with shellcheck on run: blocks) and shellcheck;
 #  - zizmor (security audit of the workflows and actions).
 name: Lint
@@ -29,40 +29,42 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 0 # the private-strings check diffs against the base branch
+          fetch-depth: 0 # the private-values check diffs against the base branch
 
-      # Runs without the secret (forks, Dependabot) as a skip with a notice.
-      - name: Check for private strings
+      # Patterns (account IDs, Okta org and app IDs, personal emails, signed tokens) always;
+      # values listed by SHA-256 hash in the PRIVATE_HASHES secret when it is set. No
+      # plaintext anywhere; reports where, never the value. The self-test runs first.
+      - name: Check for private values
         env:
-          PRIVATE_STRINGS: ${{ secrets.PRIVATE_STRINGS }}
+          PRIVATE_HASHES: ${{ secrets.PRIVATE_HASHES }}
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
           TITLE: ${{ github.event.pull_request.title }}
           BODY: ${{ github.event.pull_request.body }}
         run: |
-          if [ -z "$PRIVATE_STRINGS" ]; then
-            echo "::notice title=Private-strings check skipped::This pull request runs without the PRIVATE_STRINGS secret (for example, from a fork)."
-            exit 0
+          python3 .github/scripts/test_check_private_values.py
+          export FLEET_HOMELAB_PRIVATE_HASHES="$RUNNER_TEMP/private-hashes"
+          printf '%s\n' "$PRIVATE_HASHES" > "$FLEET_HOMELAB_PRIVATE_HASHES"
+          if [ -z "$PRIVATE_HASHES" ]; then
+            echo "::notice title=Patterns only::No PRIVATE_HASHES secret here (for example, a fork), so only the pattern rules run."
           fi
-          patterns="$RUNNER_TEMP/private-strings"
-          printf '%s\n' "$PRIVATE_STRINGS" > "$patterns"
           fail=0
-          check() { .github/scripts/check-private-strings.sh "$patterns" "$1" || fail=1; }
+          check() { python3 .github/scripts/check-private-values.py "$1" || fail=1; }
           git diff --name-only "$BASE...$HEAD" | check "the changed file names"
           while IFS= read -r f; do
             git diff -U0 "$BASE...$HEAD" -- "$f" | grep '^+' | grep -v '^+++' | check "the added lines of $f"
           done < <(git diff --name-only --diff-filter=d "$BASE...$HEAD")
           git log --format=%B "$BASE..$HEAD" | check "the commit messages"
           printf '%s\n%s\n' "$TITLE" "$BODY" | check "the pull request title and body"
-          rm -f "$patterns"
+          rm -f "$FLEET_HOMELAB_PRIVATE_HASHES"
           if [ "$fail" -ne 0 ]; then
-            echo "::error title=Private string found::Remove it from the pull request (and from the history of its commits)."
+            echo "::error title=Private value found::Remove it from the pull request (and from the history of its commits)."
           fi
           exit "$fail"
 
       # Our scripts only; .github/fleet-gitops/ is Fleet's scaffold, kept as generated.
       - name: shellcheck
-        run: shellcheck .github/scripts/*.sh .githooks/*
+        run: shellcheck .githooks/*
 
       # A release binary checked against its published SHA-256 checksum. Dependabot
       # cannot update it: bump the version and checksum together by hand.
