@@ -36,10 +36,32 @@ Follow Fleet's documented approach, and call out deviations.
 
 ## When reviewing a pull request
 
-Focus on, in order:
-1. Private or identifying values.
-2. Changes that remove or weaken something in Fleet: deleted fleets, policies, labels or software; SSO turned off; `enable_sso_idp_login` turned on.
-3. Departures from Fleet's GitOps reference or from how Fleet's own `it-and-security` setup does the same thing.
-4. Workflow security: permissions, untrusted input in `run:` steps, unpinned actions.
+This repo deploys real endpoint configuration: policies, configuration profiles, scripts that run as root on every device in a fleet, and software. Review it as security configuration, not just YAML.
 
-Skip style nits.
+Comment only on what matters, with file and line, why it matters, and a suggested fix. Never quote a private value; point to where it is. Skip style nits.
+
+**Standards to review against:**
+- **CIS Benchmarks.** Fleet publishes CIS-based policies for macOS and Windows in [`fleetdm/fleet/ee/cis`](https://github.com/fleetdm/fleet/tree/main/ee/cis); see [Fleet's CIS docs](https://fleetdm.com/docs/using-fleet/cis-benchmarks). CIS's own PDFs need a free registration at cisecurity.org.
+- **NIST's [macOS Security Compliance Project](https://pages.nist.gov/macos_security/)** ([source](https://github.com/usnistgov/macos_security)). It maps macOS settings to NIST SP 800-53, CIS and DISA STIG.
+- **[DISA STIGs](https://public.cyber.mil/stigs/)**, and NIST's [National Checklist Program](https://csrc.nist.gov/projects/national-checklist-program).
+- **[Microsoft's Windows security baselines](https://learn.microsoft.com/en-us/windows/security/operating-system-security/device-management/windows-security-configuration-framework/windows-security-baselines).**
+- **Fleet's own approach** (above).
+
+Cite a specific control ID only when you are sure of it; never invent one. This is a homelab, so a deliberate deviation is fine. Flag it, and ask for the reason to be written down in the change.
+
+**Check, in this order:**
+1. **Private or identifying values** anywhere in the change, including PR text and file names.
+2. **Anything that weakens an endpoint control** compared with the baselines above. For example:
+   - turning off disk encryption, the firewall, Gatekeeper or SIP, SmartScreen or Defender
+   - a weaker screen lock or password policy
+   - delayed or disabled OS updates
+   - broader admin rights, or remote access left open
+   - less logging
+   - an existing policy removed or loosened
+3. **What runs on devices:**
+   - **Scripts** run as root on every device in the fleet they target, so check what they change and that they're idempotent.
+   - **Software** should come from trusted sources, pinned to versions or hashes where Fleet supports it.
+   - **Labels and fleet targeting** should reach only the intended devices.
+4. **Fleet behaviour:** anything removed (fleets, policies, reports, labels, profiles, software), because what isn't in this repo is deleted from Fleet. Also single sign-on turned off, or `enable_sso_idp_login` turned on.
+5. **Departures from Fleet's GitOps reference,** or from how Fleet's own `it-and-security` setup does the same thing.
+6. **Workflow security:** permissions, untrusted input in `run:` steps, unpinned actions.
