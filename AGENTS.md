@@ -35,6 +35,17 @@ Follow Fleet's documented approach, and call out deviations.
 - **Run the checks before pushing:** `checks/run.sh` (after `checks/install-tools.sh` once). Every pull request also gets a `fleetctl gitops --dry-run`.
 - **Expect skipped runs while Fleet is down:** while the stack is torn down, runs skip with a warning instead of failing. The run that the infra repo's `up.sh` starts after the next rebuild applies `main`.
 
+## Writing configuration here
+
+Adapted from the `CLAUDE.md` in Fleet's `fleetctl new` template.
+- **Where things go:** add a policy, report, profile or script as a file in the matching `platforms/<platform>/<kind>/` folder, following an existing file there. A fleet's YAML picks files up with globs (for example `paths: ../platforms/macos/policies/*.yml`), so check its globs before wiring a file in by hand.
+- **Software:** prefer a [Fleet-maintained app](https://github.com/fleetdm/fleet/tree/main/ee/maintained-apps) (`fleet_maintained_apps` in a fleet's `software:` section) over a custom package when one exists.
+- **Targeting:** to scope something to part of a fleet, reference a label from `labels/*.yml` with `labels_include_any` or `labels_include_all`, rather than a new inline query.
+- **Validate before inventing:** keys and values against [Fleet's GitOps reference](https://fleetdm.com/docs/configuration/yaml-files); osquery tables and columns against [Fleet's schema](https://fleetdm.com/tables) for the target platform.
+- **The `/fleet-gitops` skill** (`.claude/skills/fleet-gitops/`, from the same template) checks queries, profiles, software and Apple declarations against those references before writing them. It may run `fleetctl gitops` only as a dry run.
+- **Dry run locally,** the way CI does for a pull request (needs `fleetctl` configured for this Fleet): `fleetctl gitops -f default.yml $(for f in fleets/*.yml; do echo -f "$f"; done) --dry-run`
+- **Terms:** a "fleet" was formerly a "team" (the API and some `fleetctl` flags still say `team`), and a "report" was formerly a "query" ("query" now means only the SQL inside a report or policy).
+
 ## When reviewing a pull request
 
 This repo deploys real endpoint configuration: policies, configuration profiles, scripts that run as root on every device in a fleet, and software. Review it as security configuration, not just YAML.
