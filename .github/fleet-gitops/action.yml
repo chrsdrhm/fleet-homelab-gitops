@@ -23,18 +23,19 @@ runs:
       run: | # zizmor: ignore[github-env]
         FLEET_URL="$(printf '%s' "$FLEET_URL" | sed 's:/*$::')"
         FLEET_VERSION="$(curl "$FLEET_URL/api/v1/fleet/version" --header "Authorization: Bearer $FLEET_API_TOKEN" --header "x-fleet-ci: ${FLEET_CI_HEADER:-}" --fail --silent | jq --raw-output '.version')"
-        DEFAULT_FLEETCTL_VERSION="latest"
 
         # Decide which fleetctl version to install:
         # If the server returns a clean version (e.g. 4.74.0), use that.
-        # If the server returns a snapshot (e.g. 0.0.0-SNAPSHOT-xxxxx), pin to DEFAULT_FLEETCTL_VERSION.
+        # A snapshot (e.g. 0.0.0-SNAPSHOT-xxxxx) or an unrecognised version fails the run.
         # Changed from the scaffold: an empty answer fails the run instead of installing
         # the newest fleetctl, which may not match the server.
         if [[ -z "$FLEET_VERSION" ]]; then
           echo "::error title=No Fleet version::Could not read the Fleet server's version, so the matching fleetctl cannot be chosen."
           exit 1
         elif [[ "$FLEET_VERSION" == 0.0.0-SNAPSHOT* ]]; then
-          INSTALL_VERSION="$DEFAULT_FLEETCTL_VERSION"
+          # Changed from the scaffold: a snapshot build has no release to match, so fail.
+          echo "::error title=Snapshot Fleet::The server runs a snapshot build, which has no matching fleetctl release."
+          exit 1
         elif [[ "$FLEET_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
           INSTALL_VERSION="$FLEET_VERSION"
         else
@@ -43,14 +44,27 @@ runs:
           if [[ "$FLEET_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             INSTALL_VERSION="$FLEET_VERSION"
           else
-            INSTALL_VERSION="$DEFAULT_FLEETCTL_VERSION"
+            echo "::error title=Unknown Fleet version::Could not match the server's version ($FLEET_VERSION) to a fleetctl release."
+            exit 1
           fi
         fi
 
         echo "Installing fleetctl v$INSTALL_VERSION..."
-        # Fleet's installer, as in the current fleetctl new template. Changed from the
-        # template: no fallback to the latest release if this version fails to install.
-        curl -fsSL https://fleetdm.com/resources/install-fleetctl.sh | FLEETCTL_VERSION="$INSTALL_VERSION" bash
+        # Changed from the scaffold, which pipes fleetdm.com's install-fleetctl.sh into
+        # bash: this step holds the API token, so it downloads exactly this release's
+        # fleetctl archive from GitHub and checks it against the release's checksums.txt
+        # before installing. No fallback to the latest release.
+        case "$(uname -m)" in x86_64) arch=amd64 ;; aarch64 | arm64) arch=arm64 ;; *) echo "::error::Unsupported CPU: $(uname -m)"; exit 1 ;; esac
+        base="https://github.com/fleetdm/fleet/releases/download/fleet-v$INSTALL_VERSION"
+        name="fleetctl_v${INSTALL_VERSION}_linux_${arch}"
+        tmp="$(mktemp -d)"
+        curl -fsSL -o "$tmp/$name.tar.gz" "$base/$name.tar.gz"
+        curl -fsSL -o "$tmp/checksums.txt" "$base/checksums.txt"
+        (cd "$tmp" && grep " $name.tar.gz\$" checksums.txt | sha256sum --check --strict -)
+        tar -xzf "$tmp/$name.tar.gz" -C "$tmp"
+        mkdir -p "$HOME/.fleetctl"
+        install -m 0755 "$tmp/$name/fleetctl" "$HOME/.fleetctl/fleetctl"
+        rm -rf "$tmp"
         echo "$HOME/.fleetctl" >> "$GITHUB_PATH"
 
     - name: Configure fleetctl
