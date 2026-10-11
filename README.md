@@ -32,6 +32,7 @@ This repo configures the Fleet server built by [`fleet-homelab-infra`](https://g
 | Push to `main` | Dry run, then apply. |
 | Nightly, and manual | Same as a push, to correct any drift made in the UI. |
 | After a rebuild | The infra repo's `up.sh` starts a run, so a change pushed while the stack was down is applied as soon as Fleet is back. |
+| Optional: Claude review | Claude reviews each pull request when it's opened, against Fleet's approach and endpoint baselines (CIS, NIST, STIG). Comment `@claude` on a pull request to review its latest commit again. It needs a Claude subscription; see the infra repo's [GitHub setup](https://github.com/chrsdrhm/fleet-homelab-infra/blob/main/docs/github-setup.md#6-optional-claude-reviews-pull-requests). |
 
 ### While the stack is down
 
