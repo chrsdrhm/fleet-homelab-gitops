@@ -34,6 +34,20 @@ org_settings:
     server_url: $FLEET_URL
 
   ###########################################################
+  # GitOps mode: Fleet's UI shows what this repo manages as read-only, with a
+  # pointer to the repo. This file defines everything, so without it a change made
+  # in the UI would be silently deleted by the next run. Exceptions (labels,
+  # software, enroll secrets) are set in the UI, under Settings > Integrations >
+  # Change management; see the README.
+  #
+  # Read more:
+  #   • https://fleetdm.com/guides/gitops-mode
+  ###########################################################
+  gitops:
+    gitops_mode_enabled: true
+    repository_url: $FLEET_GITOPS_REPO_URL # this repository; the workflow sets it
+
+  ###########################################################
   # Uncomment to use single sign-on (SSO) for admins accessing Fleet.
   #
   # Read more:

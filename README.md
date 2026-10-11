@@ -28,7 +28,7 @@ This repo configures the Fleet server built by [`fleet-homelab-infra`](https://g
 |---|---|
 | Pull request | `fleetctl gitops --dry-run` only. Nothing changes in Fleet. |
 | Push to `main` | Dry run, then apply. |
-| Nightly, and manual | Same as a push, to correct any drift made in the UI. |
+| Nightly, and manual | Same as a push, to correct any drift. |
 | After a rebuild | The infra repo's `up.sh` starts a run, so a change pushed while the stack was down is applied as soon as Fleet is back. |
 | Optional: Claude review | Claude reviews each pull request when it's opened, against Fleet's approach and endpoint baselines (CIS, NIST, STIG). Comment `@claude` on a pull request to review its latest commit again. It needs a Claude subscription; see the infra repo's [GitHub setup](https://github.com/chrsdrhm/fleet-homelab-infra/blob/main/docs/github-setup.md#6-optional-claude-reviews-pull-requests). |
 
@@ -40,7 +40,16 @@ The Fleet server is [torn down between sessions](https://github.com/chrsdrhm/fle
 - **Nothing is lost.** Changes merged while Fleet is down are applied as soon as it's back: the infra repo's `up.sh` starts a run after every rebuild, and that run applies whatever is on `main`.
 - Pull requests without secrets (Dependabot or forks) skip their dry run with a notice.
 
-Because `default.yml` contains `org_settings`, **anything not defined in this repo is removed from Fleet on apply**, including fleets created only in the UI. That is the point of GitOps, and it is also why edits belong here and not in the console.
+### GitOps mode: the UI is read-only
+
+Because `default.yml` contains `org_settings`, **anything not defined in this repo is removed from Fleet on apply**, including things created only in the UI, on a merge or by the nightly run. The dry run doesn't compare with the server, so nothing would warn you. So **GitOps mode is on** (`org_settings.gitops` in `default.yml`): Fleet's UI shows everything this repo manages as read-only, with a link here, and changes go through a pull request. If you run this with CI, keep it on.
+
+**Exceptions.** Fleet can leave three things editable in the UI (Settings → Integrations → Change management; they can't be set in YAML). Only enroll secrets are excepted here, which is Fleet's default. You'd add the others if their speed matters more than having every change reviewed and in Git:
+- **Enroll secrets** (on by default, and kept on): they're secrets, so they can't live in this public repo; rotate them in the UI.
+- **Labels:** to make a label on the spot, such as a manual label to group a few hosts during an investigation, without a pull request.
+- **Software:** to upload an installer or add an App Store app from the UI, for example a one-off install or a package too large for Git.
+
+Excepted items aren't in this repo, so it stops being the full record of them, and GitOps no longer manages them.
 
 ## Security notes
 
