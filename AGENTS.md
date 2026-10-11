@@ -23,6 +23,7 @@ Follow Fleet's documented approach, and call out deviations.
 - **No private or identifying values, anywhere.** That covers YAML, commit messages, branch names, and PR titles, bodies and comments.
   - Private values include the Fleet URL and hostname, the identity provider's metadata or logo URLs, Okta org names, IDs and URLs, email addresses, and any token or enroll secret.
   - In the YAML they stay as `$VARIABLES` filled from GitHub secrets.
+  - Placeholder email addresses use `example.com`, `example.org` or `example.net`, the only domains the private-values check accepts.
 - **Never create a plaintext copy of a private value** (no extra files, secrets or logs).
 - **Never change identity-provider group membership.**
 - **Every change goes through a pull request.** `main` has no bypass. Branch from an up-to-date `origin/main`, and before adding commits to an existing branch, check that its pull request is still open. Merges are the owner's call.
@@ -50,7 +51,7 @@ Comment only on what matters, with file and line, why it matters, and a suggeste
 Cite a specific control ID only when you are sure of it; never invent one. This is a homelab, so a deliberate deviation is fine. Flag it, and ask for the reason to be written down in the change.
 
 **Check, in this order:**
-1. **Private or identifying values** anywhere in the change, including PR text and file names.
+1. **Private or identifying values** anywhere in the change, including PR text and file names. Treat an email address on any domain other than `example.com`, `example.org` or `example.net` as a finding, even one that looks made up: the private-values check fails on it too, and the text reaches devices as written.
 2. **Anything that weakens an endpoint control** compared with the baselines above. For example:
    - turning off disk encryption, the firewall, Gatekeeper or SIP, SmartScreen or Defender
    - a weaker screen lock or password policy
