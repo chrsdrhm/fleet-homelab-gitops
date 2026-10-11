@@ -9,12 +9,8 @@ on:
   # Pull requests get a dry run. pull_request_target is how Fleet's current
   # fleetctl new template does it: the workflow and the action come from main, so a
   # pull request can't edit them to read the Fleet API token; its YAML is checked
-  # out separately (untrusted-pr/) and only read by fleetctl. pull_request stays for
-  # now, until a test confirms the pull_request_target run counts as the required
-  # fleet-gitops check; then it goes.
-  pull_request:
-    paths:
-      - "**"
+  # out separately (untrusted-pr/) and only read by fleetctl. Its run is attached to
+  # the pull request's own commit, so it counts as the required fleet-gitops check.
   pull_request_target:
     branches:
       - main
@@ -72,7 +68,7 @@ jobs:
         run: |
           # Pull requests from Dependabot or forks run without secrets, so there is no
           # server to dry-run against.
-          if [ -z "${FLEET_URL}" ] && { [ "$EVENT" = "pull_request" ] || [ "$EVENT" = "pull_request_target" ]; }; then
+          if [ -z "${FLEET_URL}" ] && [ "$EVENT" = "pull_request_target" ]; then
             echo "up=false" >> "$GITHUB_OUTPUT"
             echo "::notice title=No secrets::This pull request runs without repository secrets (Dependabot or a fork), so the dry run is skipped."
             exit 0
@@ -96,7 +92,7 @@ jobs:
         uses: ./.github/fleet-gitops
         with:
           # Run GitOps in dry-run mode for pull requests.
-          dry-run-only: ${{ (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && 'true' || 'false' }}
+          dry-run-only: ${{ github.event_name == 'pull_request_target' && 'true' || 'false' }}
 
         # These environment variables can be set as repository secrets,
         # alongside any other environment variables mentioned in your .yml files.
