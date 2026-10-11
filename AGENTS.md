@@ -9,6 +9,15 @@ Fleet's configuration (organization settings, single sign-on, fleets, policies),
 - **Layout:** the one `fleetctl new` generates. Fleet's [GitOps reference](https://fleetdm.com/docs/configuration/yaml-files) is the authority on what each YAML file can hold.
 - **Checks:** in [`checks/`](checks/README.md).
 
+## Fleet's own approach (prefer it)
+
+Follow Fleet's documented approach, and call out deviations.
+
+- [Fleet's GitOps reference](https://fleetdm.com/docs/configuration/yaml-files): what each YAML file and key can hold.
+- [`fleetdm/fleet/it-and-security`](https://github.com/fleetdm/fleet/tree/main/it-and-security): Fleet's own GitOps setup for its company devices, the best real-world example of structure, policies, reports, profiles and software.
+- [The `fleetctl new` templates](https://github.com/fleetdm/fleet/tree/main/cmd/fleetctl/fleetctl/templates/new): where this repo's layout and `.github/fleet-gitops/` come from.
+- [Fleet docs](https://fleetdm.com/docs) and [guides](https://fleetdm.com/guides).
+
 ## Hard rules
 
 - **No private or identifying values, anywhere.** That covers YAML, commit messages, branch names, and PR titles, bodies and comments.
@@ -30,6 +39,7 @@ Fleet's configuration (organization settings, single sign-on, fleets, policies),
 Focus on, in order:
 1. Private or identifying values.
 2. Changes that remove or weaken something in Fleet: deleted fleets, policies, labels or software; SSO turned off; `enable_sso_idp_login` turned on.
-3. Workflow security: permissions, untrusted input in `run:` steps, unpinned actions.
+3. Departures from Fleet's GitOps reference or from how Fleet's own `it-and-security` setup does the same thing.
+4. Workflow security: permissions, untrusted input in `run:` steps, unpinned actions.
 
 Skip style nits.
