@@ -24,8 +24,6 @@ Fleet's [GitOps reference](https://fleetdm.com/docs/configuration/yaml-files) li
 
 This repo configures the Fleet server built by [`fleet-homelab-infra`](https://github.com/chrsdrhm/fleet-homelab-infra). Set that up first, then follow its [setup guide's GitOps step](https://github.com/chrsdrhm/fleet-homelab-infra/blob/main/docs/setup.md#7-the-gitops-repo-fleets-configuration) to connect this repo.
 
-**See it in action:** example pull requests show what CI posts: [a new policy with Claude's review](https://github.com/chrsdrhm/fleet-homelab-gitops/pull/27), including an `@claude` re-review, and [a lint failure on a private value](https://github.com/chrsdrhm/fleet-homelab-gitops/pull/30).
-
 ## How it runs
 
 | Trigger | What happens |
