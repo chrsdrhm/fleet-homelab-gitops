@@ -1,0 +1,8 @@
+- name: macOS - Firewall enabled
+  query: SELECT 1 FROM alf WHERE global_state >= 1;
+  critical: false
+  description: |-
+    Checks that the macOS Application Firewall is on (global_state 1 = on, 2 = on and blocking all incoming connections). Based on Fleet's own policy in fleetdm/fleet/it-and-security.
+  resolution: |-
+    Turn on the firewall in System Settings > Network > Firewall, then refetch this host in Fleet.
+  platform: darwin
