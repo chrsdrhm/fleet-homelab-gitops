@@ -41,7 +41,7 @@ org_settings:
   #   • https://fleetdm.com/docs/deploy/single-sign-on-sso
   ###########################################################
   sso_settings:
-    enable_sso: true
+    enable_sso: true # optional: set to false (and leave out the two Okta secrets below) to sign in with passwords instead
     enable_sso_idp_login: false # off on purpose: an unsolicited, IdP-initiated login drops Fleet's request-binding check
     enable_jit_provisioning: true # Premium: create the account on first login; the role comes from the IdP's FLEET_JIT_USER_ROLE_GLOBAL attribute
     idp_name: "Okta"
