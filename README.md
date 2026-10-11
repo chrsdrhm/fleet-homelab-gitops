@@ -22,10 +22,6 @@ Fleet's [GitOps reference](https://fleetdm.com/docs/configuration/yaml-files) li
 
 This repo configures the Fleet server built by [`fleet-homelab-infra`](https://github.com/chrsdrhm/fleet-homelab-infra). Set that up first, then follow its [setup guide's GitOps step](https://github.com/chrsdrhm/fleet-homelab-infra/blob/main/docs/setup.md#7-the-gitops-repo-fleets-configuration) to connect this repo.
 
-### Without single sign-on
-
-Single sign-on is optional. To run without it, set `enable_sso: false` under `sso_settings` in `default.yml`, or remove the block, and leave out the `FLEET_OKTA_METADATA_URL` and `FLEET_IDP_IMAGE_URL` secrets. The pull request's dry run shows whether Fleet accepts the change. For why I use Okta, and how to use another identity provider instead, see the infra repo's [Identity section](https://github.com/chrsdrhm/fleet-homelab-infra#identity-an-okta-free-tenant).
-
 ## How it runs
 
 | Trigger | What happens |
