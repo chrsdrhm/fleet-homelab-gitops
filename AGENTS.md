@@ -27,7 +27,7 @@ Follow Fleet's documented approach, and call out deviations.
 - **Never create a plaintext copy of a private value** (no extra files, secrets or logs).
 - **Never change identity-provider group membership.**
 - **Every change goes through a pull request.** `main` has no bypass. Branch from an up-to-date `origin/main`, and before adding commits to an existing branch, check that its pull request is still open. Merges are the owner's call.
-- **Remember that `default.yml` defines everything.** Anything not in this repo is removed from Fleet on apply, including fleets created only in the UI.
+- **Remember that `default.yml` defines everything.** Anything not in this repo is removed from Fleet on apply, including fleets created only in the UI. GitOps mode is on, so the UI is read-only for what this repo manages; don't turn it off, or add UI exceptions, without the owner's say.
 - **Leave Fleet's scaffold alone:** `.github/fleet-gitops/` and the generated layout are Fleet's. Change them only on purpose, and say so.
 
 ## How to work here

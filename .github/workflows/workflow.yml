@@ -116,6 +116,12 @@ jobs:
           FLEET_IDP_IMAGE_URL: ${{ secrets.FLEET_IDP_IMAGE_URL }}
 
           ###########################################################
+          # The repository GitOps mode points the Fleet UI to (default.yml). From
+          # the run itself, so a fork points to its own repository.
+          ###########################################################
+          FLEET_GITOPS_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+
+          ###########################################################
           # Secret header that lets GitHub's runners (in any country) past the
           # Fleet WAF's US-only rule. Sent by the action on every request.
           ###########################################################
