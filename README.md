@@ -38,7 +38,7 @@ The Fleet server is [torn down between sessions](https://github.com/chrsdrhm/fle
 
 - **No failed runs.** Every run first checks that Fleet answers. If it doesn't, the run is skipped with a **warning** instead of failing, so a pull request still passes its check and can be merged.
 - **Nothing is lost.** Changes merged while Fleet is down are applied as soon as it's back: the infra repo's `up.sh` starts a run after every rebuild, and that run applies whatever is on `main`.
-- Pull requests without secrets (Dependabot or forks) skip their dry run with a notice.
+- Dependabot's pull requests run without the repository's secrets, so their dry run is skipped with a notice. Pull requests from forks get no dry run.
 
 ### GitOps mode: the UI is read-only
 
