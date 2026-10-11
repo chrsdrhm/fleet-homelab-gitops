@@ -66,3 +66,4 @@ I built this with [Claude Code](https://claude.com/claude-code). The design deci
 ## License
 
 [MIT](LICENSE). Provided as-is, with no warranty. It's my own experiment, so expect it to change, break, or be torn down.
+
