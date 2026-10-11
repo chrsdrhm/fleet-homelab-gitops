@@ -1,10 +1,12 @@
 # zizmor configuration (https://docs.zizmor.sh/configuration/).
 rules:
-  adhoc-packages:
+  dangerous-triggers:
     ignore:
-      # Fleet's own scaffold installs fleetctl with npm, pinned to the Fleet server's
-      # exact version, which is how Fleet intends the action to work.
-      - action.yml
+      # pull_request_target, as in Fleet's current fleetctl new template: the workflow
+      # and the action come from main, the pull request's YAML is checked out into
+      # untrusted-pr/ and only read by fleetctl (never run), credentials aren't
+      # persisted, and only this repository's own branches get a run.
+      - workflow.yml
   self-repository:
     # GitHub's `uses: $/...` syntax (July 2026) is not supported by actionlint 1.7.12 yet,
     # which rejects it as an invalid action reference. Keep `./...` until it is.

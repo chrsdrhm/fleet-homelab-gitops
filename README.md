@@ -26,7 +26,7 @@ This repo configures the Fleet server built by [`fleet-homelab-infra`](https://g
 
 | Trigger | What happens |
 |---|---|
-| Pull request | `fleetctl gitops --dry-run` only. Nothing changes in Fleet. |
+| Pull request | `fleetctl gitops --dry-run` only. Nothing changes in Fleet. The workflow and action come from `main`, so a pull request can't change the code that runs with the API token; its YAML is only read. |
 | Push to `main` | Dry run, then apply. |
 | Nightly, and manual | Same as a push, to correct any drift. |
 | After a rebuild | The infra repo's `up.sh` starts a run, so a change pushed while the stack was down is applied as soon as Fleet is back. |
@@ -54,14 +54,14 @@ Excepted items aren't in this repo, so it stops being the full record of them, a
 ## Security notes
 
 - **Nothing sensitive or identifying in the YAML.** The server URL and the identity provider's URLs are `$VARIABLES` filled in from GitHub Actions secrets, and the API token is passed in by the workflow. Enroll secrets aren't here at all; Fleet manages them itself.
-- **A least-privilege token.** It belongs to an API-only Fleet user with the `gitops` role, which can change configuration but can't log in to the UI.
+- **A least-privilege token.** It belongs to an API-only Fleet user with the `gitops` role, which can change configuration but can't log in to the UI. A pull request's dry run uses the workflow and action from `main`, as Fleet's current template does, so a pull request can't edit them to read the token. `fleetctl` still reads the pull request's YAML and fills in its `$VARIABLES`, which could put a secret's value into what the dry run sends to Fleet, so dry runs are limited to this repo's own branches, which only people with write access can push.
 - **Through the WAF by header, not by opening it up.** Fleet only accepts US traffic, and GitHub's runners can be anywhere, so the workflow sends a secret header that lets its requests past the country check. Fleet still requires the API token on every call.
 - **Checked on every pull request.** A lint workflow runs `actionlint` and `zizmor` on the workflows and fails if a pull request adds a private value: AWS account IDs, Okta org and app IDs, personal emails and signed tokens by pattern, plus values a pattern can't describe (like the hostname), checked against a list of their SHA-256 hashes in a repository secret, so no plaintext is stored anywhere. Everything is in [`checks/`](checks/README.md), which also explains running the checks locally, the optional hooks, and removing them.
 - **Found a problem?** Please [report it privately](https://github.com/chrsdrhm/fleet-homelab-gitops/security/advisories/new) through this repo's **Security** tab instead of opening a public issue.
 
 ## Built with AI assistance
 
-I built this with [Claude Code](https://claude.com/claude-code). The design decisions, the Fleet instance it configures, and the review of what gets applied are mine; much of the setup and the fact-checking against Fleet's own source were done with the assistant. Rules for AI assistants working in or reviewing this repo are in [`AGENTS.md`](AGENTS.md), which Claude Code, GitHub Copilot and other tools read; `CLAUDE.md` only imports it, for Claude Code setups that read nothing else.
+I built this with [Claude Code](https://claude.com/claude-code). The design decisions, the Fleet instance it configures, and the review of what gets applied are mine; much of the setup and the fact-checking against Fleet's own source were done with the assistant. Rules for AI assistants working in or reviewing this repo are in [`AGENTS.md`](AGENTS.md), which Claude Code, GitHub Copilot and other tools read; `CLAUDE.md` only imports it, for Claude Code setups that read nothing else. Fleet's `/fleet-gitops` skill (in `.claude/skills/`, from its `fleetctl new` template) checks new policies, profiles and software against Fleet's and Apple's references; here it may run `fleetctl gitops` only as a dry run.
 
 ## License
 
