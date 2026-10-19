@@ -69,17 +69,20 @@ org_settings:
 
   mdm:
     ###########################################################
-    # Uncomment to use single sign-on (SSO) to authenticate
-    # new computers enrolling in Fleet during end user setup.
+    # Single sign-on (SSO) to authenticate the person enrolling
+    # a device, during end user setup. A second Okta app, separate
+    # from the admin one above (the infrastructure repo's
+    # okta/enduser.tf). Turned on per fleet with
+    # controls.setup_experience.enable_end_user_authentication.
     #
     # Read more:
     #   • https://fleetdm.com/docs/configuration/yaml-files#end-user-authentication
     #   • https://fleetdm.com/guides/setup-experience#require-idp-authentication
     ###########################################################
-    # end_user_authentication:
-    #   idp_name: "Okta"  # e.g. "Entra", "Okta", "Google Workspace", etc. (Displayed to end users.)
-    #   metadata_url: "https://okta.com/replace-this-url" # This must exactly match the "IdP metadata URL" provided by your identity provider (IdP) when setting up this integration.
-    #   entity_id: "fleet-end-users" # This must exactly match the "Entity ID" field you chose when setting up this integration in your identity provider (IdP).
+    end_user_authentication:
+      idp_name: "Okta" # displayed to end users
+      metadata_url: "$FLEET_END_USER_OKTA_METADATA_URL" # a repository secret: it embeds the Okta org name and app key
+      entity_id: "fleet-end-users" # must equal the end-user Okta app's audience exactly
 
     ###########################################################
     # Uncomment when you are ready to start using zero-touch enrollment
