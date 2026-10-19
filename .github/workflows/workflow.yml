@@ -134,6 +134,7 @@ jobs:
           # written into a file in this public repo.
           ###########################################################
           FLEET_OKTA_METADATA_URL: ${{ secrets.FLEET_OKTA_METADATA_URL }}
+          FLEET_END_USER_OKTA_METADATA_URL: ${{ secrets.FLEET_END_USER_OKTA_METADATA_URL }}
           FLEET_IDP_IMAGE_URL: ${{ secrets.FLEET_IDP_IMAGE_URL }}
 
           ###########################################################
