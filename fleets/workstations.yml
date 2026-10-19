@@ -36,14 +36,15 @@ controls:
     # apple_setup_assistant: ../platforms/macos/enrollment-profiles/automatic-enrollment.dep.json
 
     ###########################################################
-    # Uncomment to use single-sign on (SSO) to authenticate
-    # end users during first-time setup of new computers.
+    # Single sign-on (SSO) to authenticate end users during
+    # first-time setup of new computers, with the IdP set in
+    # default.yml's end_user_authentication.
     #
     # Read more:
     #   • https://fleetdm.com/docs/configuration/yaml-files#end-user-authentication
     #   • https://fleetdm.com/guides/setup-experience#require-idp-authentication
     ###########################################################
-    # enable_end_user_authentication: true
+    enable_end_user_authentication: true
 
   ###########################################################
   # Configuration profiles
