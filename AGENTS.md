@@ -6,7 +6,7 @@ Rules for any AI assistant working in or reviewing this repo (Claude Code, GitHu
 
 Fleet's configuration (organization settings, single sign-on, fleets, policies), applied to a homelab Fleet server with `fleetctl gitops`.
 - **The server:** built by the separate `fleet-homelab-infra` repo and torn down between sessions.
-- **Layout:** the one `fleetctl new` generates. Fleet's [GitOps reference](https://fleetdm.com/docs/configuration/yaml-files) is the authority on what each YAML file can hold.
+- **Layout:** the one `fleetctl new` generates, without its `personal-mobile-devices` fleet (no mobile devices here). Fleet's [GitOps reference](https://fleetdm.com/docs/configuration/yaml-files) is the authority on what each YAML file can hold.
 - **Checks:** in [`checks/`](checks/README.md).
 
 ## Fleet's own approach (prefer it)
@@ -33,7 +33,7 @@ Follow Fleet's documented approach, and call out deviations.
 ## How to work here
 
 - **Run the checks before pushing:** `checks/run.sh` (after `checks/install-tools.sh` once). Every pull request also gets a `fleetctl gitops --dry-run`.
-- **Expect skipped runs while Fleet is down:** while the stack is torn down, runs skip with a warning instead of failing. The run that the infra repo's `up.sh` starts after the next rebuild applies `main`.
+- **Expect skipped runs while Fleet is down:** while the stack is torn down, runs skip with a warning instead of failing. The run that the infra repo's `up.sh` starts after the next rebuild applies `main`. There's no nightly run (see the README), so to correct UI drift during a session, run the workflow by hand.
 
 ## Writing configuration here
 
@@ -42,8 +42,8 @@ Adapted from the `CLAUDE.md` in Fleet's `fleetctl new` template.
 - **Software:** prefer a [Fleet-maintained app](https://github.com/fleetdm/fleet/tree/main/ee/maintained-apps) (`fleet_maintained_apps` in a fleet's `software:` section) over a custom package when one exists.
 - **Targeting:** to scope something to part of a fleet, reference a label from `labels/*.yml` with `labels_include_any` or `labels_include_all`, rather than a new inline query.
 - **Validate before inventing:** keys and values against [Fleet's GitOps reference](https://fleetdm.com/docs/configuration/yaml-files); osquery tables and columns against [Fleet's schema](https://fleetdm.com/tables) for the target platform.
-- **The `/fleet-gitops` skill** (`.claude/skills/fleet-gitops/`, from the same template) checks queries, profiles, software and Apple declarations against those references before writing them. It may run `fleetctl gitops` only as a dry run.
-- **Dry run locally,** the way CI does for a pull request (needs `fleetctl` configured for this Fleet): `fleetctl gitops -f default.yml $(for f in fleets/*.yml; do echo -f "$f"; done) --dry-run`
+- **The `/fleet-gitops` skill** (`.claude/skills/fleet-gitops/`, an older snapshot of the same template's skill) checks queries, profiles, software and Apple declarations against those references before writing them. It may run `fleetctl gitops` only as a dry run.
+- **Dry run locally,** the way CI does for a pull request (needs `fleetctl` configured for this Fleet): first export the variables the YAML references, `FLEET_URL`, `FLEET_GITOPS_REPO_URL`, `FLEET_OKTA_METADATA_URL`, `FLEET_END_USER_OKTA_METADATA_URL` and `FLEET_IDP_IMAGE_URL` (never paste their values into files here), then run `fleetctl gitops -f default.yml $(for f in fleets/*.yml; do echo -f "$f"; done) --delete-other-fleets --dry-run`.
 - **Terms:** a "fleet" was formerly a "team" (the API and some `fleetctl` flags still say `team`), and a "report" was formerly a "query" ("query" now means only the SQL inside a report or policy).
 
 ## When reviewing a pull request

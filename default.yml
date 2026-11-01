@@ -48,7 +48,7 @@ org_settings:
     repository_url: $FLEET_GITOPS_REPO_URL # this repository; the workflow sets it
 
   ###########################################################
-  # Uncomment to use single sign-on (SSO) for admins accessing Fleet.
+  # Single sign-on (SSO) for admins accessing Fleet, through Okta.
   #
   # Read more:
   #   • https://fleetdm.com/docs/configuration/yaml-files#sso-settings
@@ -132,8 +132,8 @@ controls:
   #   # then enrolls the device in Fleet.  Unsure?  Get help @ fleetdm.com/support.
 
   ###########################################################
-  # Uncomment when you are ready to start using Fleet's Windows MDM features.
-  # 
+  # Fleet's Windows MDM features, turned on.
+  #
   # Read more:
   #   • https://fleetdm.com/guides/windows-mdm-setup
   ###########################################################
