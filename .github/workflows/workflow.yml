@@ -16,14 +16,20 @@ on:
       - main
     paths:
       - "**"
-  workflow_dispatch: # allows manual triggering
-  schedule:
-    - cron: "0 6 * * *" # Nightly 6AM UTC
+  workflow_dispatch: # allows manual triggering; run it by hand to correct UI drift mid-session
+  # No nightly schedule, unlike Fleet's fleetctl new template: the infra stack is torn
+  # down nightly (3am Chicago), and GitHub started the 06:00 UTC run hours late, after
+  # the teardown, so it found Fleet down and skipped every night. Config is applied on
+  # every push to main and after every up, and UI drift only matters while the stack is
+  # up, when the next push or up corrects it.
 
-# Prevent concurrent runs of this workflow.
+# One apply at a time, queued, never cancelled. A pull request's dry runs get their own
+# group, per pull request, so they never cancel a pending apply (GitHub keeps one pending
+# run per group, and a newer one cancels it); a newer push to the same pull request
+# cancels its older dry run.
 concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request_target' && format('pr-{0}', github.event.pull_request.number) || 'apply' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
 
 defaults:
   run:
@@ -66,11 +72,13 @@ jobs:
           FLEET_CI_HEADER: ${{ secrets.FLEET_CI_HEADER }}
           EVENT: ${{ github.event_name }}
         run: |
-          # Pull requests from Dependabot or forks run without secrets, so there is no
-          # server to dry-run against.
+          # Fork pull requests are skipped by the job's if. Dependabot's pull requests target
+          # main, so under pull_request_target they get this repo's Actions secrets and a real
+          # dry run like any other branch. Only a run with no FLEET_URL secret at all lands
+          # here.
           if [ -z "${FLEET_URL}" ] && [ "$EVENT" = "pull_request_target" ]; then
             echo "up=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=No secrets::This pull request runs without repository secrets (Dependabot or a fork), so the dry run is skipped."
+            echo "::notice title=No secrets::This pull request runs without the FLEET_URL secret, so the dry run is skipped."
             exit 0
           fi
           # x-fleet-ci lets this runner past the WAF's US-only rule (runners can be anywhere).

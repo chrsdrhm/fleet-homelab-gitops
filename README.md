@@ -10,7 +10,7 @@
 
 Everything Fleet can manage from Git is described here in YAML. A GitHub Actions workflow applies it to the server, so a change goes through a pull request, a dry run, and a merge, and the history is the audit trail.
 
-The layout is the one `fleetctl new` generates:
+The layout is the one `fleetctl new` generates, without its `personal-mobile-devices` fleet (there are no mobile devices in this homelab):
 
 - **`default.yml`**: organization-wide settings, such as single sign-on and MDM.
 - **`fleets/`**: one file per fleet, each with its own settings, policies and software.
@@ -28,8 +28,9 @@ This repo configures the Fleet server built by [`fleet-homelab-infra`](https://g
 |---|---|
 | Pull request | `fleetctl gitops --dry-run` only. Nothing changes in Fleet. The workflow and action come from `main`, so a pull request can't change the code that runs with the API token; its YAML is only read. |
 | Push to `main` | Dry run, then apply. |
-| Nightly, and manual | Same as a push, to correct any drift. |
+| Manual | Same as a push. Run it to correct drift made in the Fleet UI during a session. |
 | After a rebuild | The infra repo's `up.sh` starts a run, so a change pushed while the stack was down is applied as soon as Fleet is back. |
+| No nightly run | Unlike Fleet's template: the stack is torn down nightly (3am Chicago), and GitHub started the 06:00 UTC run hours late, after the teardown, so it skipped every night. Drift in the UI only matters while the stack is up, and the next push or `up` corrects it. |
 | Optional: Claude review | Claude reviews each pull request when it's opened, against Fleet's approach and endpoint baselines (CIS, NIST, STIG). Comment `@claude` on a pull request to review its latest commit again. It needs a Claude subscription; see the infra repo's [GitHub setup](https://github.com/chrsdrhm/fleet-homelab-infra/blob/main/docs/github-setup.md#6-optional-claude-reviews-pull-requests). |
 
 ### While the stack is down
@@ -37,12 +38,12 @@ This repo configures the Fleet server built by [`fleet-homelab-infra`](https://g
 The Fleet server is [torn down between sessions](https://github.com/chrsdrhm/fleet-homelab-infra#teardown-and-rebuild), and this repo is built for that:
 
 - **No failed runs.** Every run first checks that Fleet answers. If it doesn't, the run is skipped with a **warning** instead of failing, so a pull request still passes its check and can be merged.
-- **Nothing is lost.** Changes merged while Fleet is down are applied as soon as it's back: the infra repo's `up.sh` starts a run after every rebuild, and that run applies whatever is on `main`.
-- Dependabot's pull requests run without the repository's secrets, so their dry run is skipped with a notice. Pull requests from forks get no dry run.
+- **Changes merged while Fleet is down wait for it.** The infra repo's `up.sh` starts a run after every rebuild, which applies whatever is on `main`. That start is best effort: from CI it needs the infra repo's optional GitOps app, and if it doesn't start, the run says so; run this workflow by hand then.
+- Dependabot's pull requests target `main`, so they get this repo's secrets and a real dry run while Fleet is up, like any branch here. Pull requests from forks get no dry run.
 
 ### GitOps mode: the UI is read-only
 
-Because `default.yml` contains `org_settings`, **anything not defined in this repo is removed from Fleet on apply**, including things created only in the UI, on a merge or by the nightly run. The dry run doesn't compare with the server, so nothing would warn you. So **GitOps mode is on** (`org_settings.gitops` in `default.yml`): Fleet's UI shows everything this repo manages as read-only, with a link here, and changes go through a pull request. If you run this with CI, keep it on.
+Because `default.yml` contains `org_settings`, **anything not defined in this repo is removed from Fleet on apply**, including things created only in the UI, on a merge, an `up` or a manual run. The dry run doesn't compare with the server, so nothing would warn you. So **GitOps mode is on** (`org_settings.gitops` in `default.yml`): Fleet's UI shows everything this repo manages as read-only, with a link here, and changes go through a pull request. If you run this with CI, keep it on.
 
 **Exceptions.** Fleet can leave three things editable in the UI (Settings → Integrations → Change management; they can't be set in YAML). Only enroll secrets are excepted here, which is Fleet's default. You'd add the others if their speed matters more than having every change reviewed and in Git:
 - **Enroll secrets** (on by default, and kept on): they're secrets, so they can't live in this public repo; rotate them in the UI.
@@ -61,7 +62,7 @@ Excepted items aren't in this repo, so it stops being the full record of them, a
 
 ## Built with AI assistance
 
-I built this with [Claude Code](https://claude.com/claude-code). The design decisions, the Fleet instance it configures, and the review of what gets applied are mine; much of the setup and the fact-checking against Fleet's own source were done with the assistant. Rules for AI assistants working in or reviewing this repo are in [`AGENTS.md`](AGENTS.md), which Claude Code, GitHub Copilot and other tools read; `CLAUDE.md` only imports it, for Claude Code setups that read nothing else. Fleet's `/fleet-gitops` skill (in `.claude/skills/`, from its `fleetctl new` template) checks new policies, profiles and software against Fleet's and Apple's references; here it may run `fleetctl gitops` only as a dry run.
+I built this with [Claude Code](https://claude.com/claude-code). The design decisions, the Fleet instance it configures, and the review of what gets applied are mine; much of the setup and the fact-checking against Fleet's own source were done with the assistant. Rules for AI assistants working in or reviewing this repo are in [`AGENTS.md`](AGENTS.md), which Claude Code, GitHub Copilot and other tools read; `CLAUDE.md` only imports it, for Claude Code setups that read nothing else. Fleet's `/fleet-gitops` skill (in `.claude/skills/`, an older snapshot of the one in its `fleetctl new` template, which has since moved it to `.agents/skills/`) checks new policies, profiles and software against Fleet's and Apple's references; here it may run `fleetctl gitops` only as a dry run.
 
 ## License
 

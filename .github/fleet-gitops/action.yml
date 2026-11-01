@@ -22,7 +22,10 @@ runs:
       # $HOME/.fleetctl, not any user-supplied value, so it cannot inject a path.
       run: | # zizmor: ignore[github-env]
         FLEET_URL="$(printf '%s' "$FLEET_URL" | sed 's:/*$::')"
-        FLEET_VERSION="$(curl "$FLEET_URL/api/v1/fleet/version" --header "Authorization: Bearer $FLEET_API_TOKEN" --header "x-fleet-ci: ${FLEET_CI_HEADER:-}" --fail --silent | jq --raw-output '.version')"
+        # Changed from the scaffold: || true and // empty, so a failed request (an expired
+        # token, a WAF block) or an answer without a version reaches the error below
+        # instead of ending the step with no message.
+        FLEET_VERSION="$(curl "$FLEET_URL/api/v1/fleet/version" --header "Authorization: Bearer $FLEET_API_TOKEN" --header "x-fleet-ci: ${FLEET_CI_HEADER:-}" --fail --silent | jq --raw-output '.version // empty' || true)"
 
         # Decide which fleetctl version to install:
         # If the server returns a clean version (e.g. 4.74.0), use that.

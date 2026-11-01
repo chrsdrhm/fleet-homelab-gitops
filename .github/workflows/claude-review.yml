@@ -9,7 +9,7 @@ name: Claude review
 
 on:
   # Not on every push, to save the plan's usage. To review the latest commit again,
-  # comment @claude on the pull request (only the repository owner can trigger it).
+  # comment @claude on the pull request (only people with write access can trigger it).
   pull_request:
     types: [opened, reopened, ready_for_review]
   issue_comment:
