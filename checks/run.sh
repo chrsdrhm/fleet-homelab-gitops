@@ -8,7 +8,7 @@
 # Needs python3, shellcheck and git; actionlint from checks/install-tools.sh; Docker for
 # zizmor (skipped locally if Docker is not running; required in CI). A missing tool is
 # skipped locally and fails in CI. shellcheck also covers .github/fleet-gitops/gitops.sh
-# (Fleet's scaffold, changed in places). The private-values check compares this
+# (Fleet's scaffold). The private-values check compares this
 # branch with BASE (default: where it forked from origin/main); in CI, BASE, HEAD,
 # TITLE and BODY come from the pull request.
 set -uo pipefail

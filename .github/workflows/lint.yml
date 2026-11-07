@@ -18,7 +18,7 @@ defaults:
 jobs:
   lint:
     name: gitops-lint
-    runs-on: ubuntu-24.04 # pinned: ubuntu-latest moves to Ubuntu 26 from 2026-10-19
+    runs-on: ubuntu-24.04 # pinned, so a new ubuntu-latest image is a reviewed change
     timeout-minutes: 10
     concurrency:
       group: gitops-lint-${{ github.event.pull_request.number }}
@@ -68,7 +68,7 @@ jobs:
       always()
       && github.event.pull_request.head.repo.full_name == github.repository
       && (needs.lint.result == 'failure' || needs.lint.result == 'success')
-    runs-on: ubuntu-24.04 # pinned: ubuntu-latest moves to Ubuntu 26 from 2026-10-19
+    runs-on: ubuntu-24.04 # pinned, so a new ubuntu-latest image is a reviewed change
     timeout-minutes: 5
     permissions:
       pull-requests: write

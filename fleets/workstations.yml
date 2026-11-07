@@ -29,7 +29,7 @@ controls:
     #
     # For more, see:
     #   • https://fleetdm.com/guides/apple-mdm-setup
-    #   • https://fleetdm.com/docs/configuration/yaml-files#macos-setup
+    #   • https://fleetdm.com/docs/configuration/yaml-files#setup-experience
     #   • https://developer.apple.com/documentation/devicemanagement/profile
     #   • https://support.apple.com/guide/deployment/automated-device-enrollment-management-dep73069dd57/web
     ###########################################################
@@ -150,6 +150,7 @@ reports:
 # > using `paths` below.
 ###########################################################
 policies:
+  - paths: ../platforms/all/policies/*.yml
   - paths: ../platforms/macos/policies/*.yml
   - paths: ../platforms/windows/policies/*.yml
   - paths: ../platforms/linux/policies/*.yml
