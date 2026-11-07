@@ -18,6 +18,8 @@ runs:
     - name: Install fleetctl
       shell: bash
       working-directory: ${{ inputs.working-directory }}
+      env:
+        GH_TOKEN: ${{ github.token }} # gh attestation verify reads fleetdm/fleet's public attestations
       # github-env: the GITHUB_PATH write below appends the runner-controlled constant
       # $HOME/.fleetctl, not any user-supplied value, so it cannot inject a path.
       run: | # zizmor: ignore[github-env]
@@ -55,8 +57,10 @@ runs:
         echo "Installing fleetctl v$INSTALL_VERSION..."
         # Changed from the scaffold, which pipes fleetdm.com's install-fleetctl.sh into
         # bash: this step holds the API token, so it downloads exactly this release's
-        # fleetctl archive from GitHub and checks it against the release's checksums.txt
-        # before installing. No fallback to the latest release.
+        # fleetctl archive from GitHub, checks it against the release's checksums.txt, and
+        # verifies its signed build provenance: built by Fleet's release workflow in
+        # fleetdm/fleet. The checksum alone catches a corrupt download, not a release whose
+        # archive and checksums.txt were both replaced. No fallback to the latest release.
         case "$(uname -m)" in x86_64) arch=amd64 ;; aarch64 | arm64) arch=arm64 ;; *) echo "::error::Unsupported CPU: $(uname -m)"; exit 1 ;; esac
         base="https://github.com/fleetdm/fleet/releases/download/fleet-v$INSTALL_VERSION"
         name="fleetctl_v${INSTALL_VERSION}_linux_${arch}"
@@ -64,6 +68,12 @@ runs:
         curl -fsSL -o "$tmp/$name.tar.gz" "$base/$name.tar.gz"
         curl -fsSL -o "$tmp/checksums.txt" "$base/checksums.txt"
         (cd "$tmp" && grep " $name.tar.gz\$" checksums.txt | sha256sum --check --strict -)
+        if ! gh attestation verify "$tmp/$name.tar.gz" --repo fleetdm/fleet \
+          --signer-workflow fleetdm/fleet/.github/workflows/goreleaser-fleet.yaml > /dev/null; then
+          echo "::error title=fleetctl not verified::$name.tar.gz has no valid build provenance from Fleet's release workflow, so it wasn't installed."
+          exit 1
+        fi
+        echo "Build provenance verified: built by fleetdm/fleet's release workflow."
         tar -xzf "$tmp/$name.tar.gz" -C "$tmp"
         mkdir -p "$HOME/.fleetctl"
         install -m 0755 "$tmp/$name/fleetctl" "$HOME/.fleetctl/fleetctl"
