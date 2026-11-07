@@ -6,8 +6,8 @@ on:
       - main
     paths:
       - "**"
-  # Pull requests get a dry run. pull_request_target is how Fleet's current
-  # fleetctl new template does it: the workflow and the action come from main, so a
+  # Pull requests get a dry run. pull_request_target is how Fleet's fleetctl new
+  # template does it: the workflow and the action come from main, so a
   # pull request can't edit them to read the Fleet API token; its YAML is checked
   # out separately (untrusted-pr/) and only read by fleetctl. Its run is attached to
   # the pull request's own commit, so it counts as the required fleet-gitops check.
@@ -16,17 +16,19 @@ on:
       - main
     paths:
       - "**"
-  workflow_dispatch: # allows manual triggering; run it by hand to correct UI drift mid-session
+  # Run it by hand to correct UI drift mid-session. Only a run on main applies; a run
+  # started on any other branch is a dry run, so unreviewed YAML never reaches Fleet.
+  workflow_dispatch:
   # No nightly schedule, unlike Fleet's fleetctl new template: the infra stack is torn
   # down nightly (3am Chicago), and GitHub started the 06:00 UTC run hours late, after
   # the teardown, so it found Fleet down and skipped every night. Config is applied on
   # every push to main and after every up, and UI drift only matters while the stack is
   # up, when the next push or up corrects it.
 
-# One apply at a time, queued, never cancelled. A pull request's dry runs get their own
-# group, per pull request, so they never cancel a pending apply (GitHub keeps one pending
-# run per group, and a newer one cancels it); a newer push to the same pull request
-# cancels its older dry run.
+# One apply at a time: an apply in progress is never cancelled, and GitHub keeps one
+# pending run per group, so a newer apply replaces a pending one (it applies a newer main).
+# A pull request's dry runs get their own group, per pull request, so they never replace
+# a pending apply; a newer push to the same pull request cancels its older dry run.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request_target' && format('pr-{0}', github.event.pull_request.number) || 'apply' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
@@ -41,7 +43,7 @@ permissions:
 
 jobs:
   fleet-gitops:
-    runs-on: ubuntu-24.04 # pinned: ubuntu-latest moves to Ubuntu 26 from 2026-10-19
+    runs-on: ubuntu-24.04 # pinned, so a new ubuntu-latest image is a reviewed change
     # pull_request_target only for this repository's own branches, never a fork's.
     if: github.event_name != 'pull_request_target' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
@@ -81,6 +83,11 @@ jobs:
             echo "::notice title=No secrets::This pull request runs without the FLEET_URL secret, so the dry run is skipped."
             exit 0
           fi
+          # Anywhere else, a missing secret would read as "Fleet is down" and pass every run.
+          if [ -z "${FLEET_URL}" ]; then
+            echo "::error title=No FLEET_URL secret::Set the FLEET_URL repository secret (README); nothing was applied."
+            exit 1
+          fi
           # x-fleet-ci lets this runner past the WAF's US-only rule (runners can be anywhere).
           code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' -H "x-fleet-ci: ${FLEET_CI_HEADER}" "${FLEET_URL%/}/healthz" || true)
           if [ "$code" = "200" ]; then
@@ -99,8 +106,9 @@ jobs:
         if: steps.fleet.outputs.up == 'true'
         uses: ./.github/fleet-gitops
         with:
-          # Run GitOps in dry-run mode for pull requests.
-          dry-run-only: ${{ github.event_name == 'pull_request_target' && 'true' || 'false' }}
+          # Dry run for pull requests, and for a manual run on any branch but main. A
+          # pull_request_target run's ref is main (its base), so test the event too.
+          dry-run-only: ${{ (github.event_name == 'pull_request_target' || github.ref != 'refs/heads/main') && 'true' || 'false' }}
 
         # These environment variables can be set as repository secrets,
         # alongside any other environment variables mentioned in your .yml files.

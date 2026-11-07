@@ -7,7 +7,7 @@ effort: high
 
 You are helping with this repository's Fleet GitOps configuration: $ARGUMENTS
 
-<!-- From Fleet's fleetctl new template (cmd/fleetctl/fleetctl/templates/new/.claude/skills/fleet-gitops). Changed in one place: `fleetctl gitops` is allowed only with `--dry-run` last, so this skill can't apply changes from a local machine; they go through a pull request. -->
+<!-- From Fleet's fleetctl new template (cmd/fleetctl/fleetctl/templates/new/.claude/skills/fleet-gitops). Changed in one place: `allowed-tools` pre-approves `fleetctl gitops` only with `--dry-run` last, so any other run asks for permission first; changes go through a pull request. -->
 
 This repo configures a live Fleet instance — CI applies `default.yml` and `fleets/*.yml` (and everything they reference under `platforms/`) on every push to the default branch. Apply the following constraints for all work in this session.
 
