@@ -146,6 +146,12 @@ jobs:
           FLEET_API_TOKEN: ${{ secrets.FLEET_API_TOKEN }}
 
           ###########################################################
+          # Values the YAML files reference as $VARIABLES. None of these is ever
+          # written into a file in this public repo.
+          ###########################################################
+          FLEET_END_USER_OKTA_METADATA_URL: ${{ secrets.FLEET_END_USER_OKTA_METADATA_URL }}
+
+          ###########################################################
           # The repository GitOps mode points the Fleet UI to (default.yml). From
           # the run itself, so a fork points to its own repository.
           ###########################################################

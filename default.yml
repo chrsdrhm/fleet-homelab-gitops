@@ -69,16 +69,19 @@ org_settings:
     ###########################################################
     # Single sign-on (SSO) to authenticate the person enrolling
     # a device, during end user setup: an identity provider app
-    # separate from the admin one. Off: no identity provider is
-    # connected. To connect one, add end_user_authentication with
-    # idp_name, metadata_url (a repository secret) and entity_id,
-    # and turn it on per fleet with
-    # controls.setup_experience.enable_end_user_authentication.
+    # separate from the admin one, turned on per fleet with
+    # controls.setup_experience.enable_end_user_authentication
+    # (off in every fleet). Fleet won't remove this while a fleet
+    # still has it on, so it goes in a later change.
     #
     # Read more:
     #   • https://fleetdm.com/docs/configuration/yaml-files#end-user-authentication
     #   • https://fleetdm.com/guides/setup-experience#require-idp-authentication
     ###########################################################
+    end_user_authentication:
+      idp_name: "Okta" # displayed to end users
+      metadata_url: "$FLEET_END_USER_OKTA_METADATA_URL" # a repository secret: it embeds the Okta org name and app key
+      entity_id: "fleet-end-users" # must equal the end-user Okta app's audience exactly
 
     ###########################################################
     # Uncomment when you are ready to start using zero-touch enrollment
