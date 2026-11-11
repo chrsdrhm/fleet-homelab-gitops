@@ -51,7 +51,7 @@ org_settings:
   # Single sign-on (SSO) for admins accessing Fleet. Off: no identity provider is
   # connected, so Fleet's admins sign in with passwords. To connect one, set
   # enable_sso to true and add idp_name, idp_image_url, entity_id and metadata_url
-  # (each a repository secret, as $VARIABLES).
+  # (each a repository secret, referenced as a variable).
   #
   # Read more:
   #   • https://fleetdm.com/docs/configuration/yaml-files#sso-settings
