@@ -48,18 +48,20 @@ org_settings:
     repository_url: $FLEET_GITOPS_REPO_URL # this repository; the workflow sets it
 
   ###########################################################
-  # Single sign-on (SSO) for admins accessing Fleet. Off: no identity provider is
-  # connected, so Fleet's admins sign in with passwords. To connect one, set
-  # enable_sso to true and add idp_name, idp_image_url, entity_id and metadata_url
-  # (each a repository secret, referenced as a variable).
+  # Single sign-on (SSO) for admins accessing Fleet, through Okta.
   #
   # Read more:
   #   • https://fleetdm.com/docs/configuration/yaml-files#sso-settings
   #   • https://fleetdm.com/docs/deploy/single-sign-on-sso
   ###########################################################
   sso_settings:
-    enable_sso: false
-    enable_sso_idp_login: false # keep off: an unsolicited, IdP-initiated login drops Fleet's request-binding check
+    enable_sso: true # optional: set to false (and leave out the two Okta secrets below) to sign in with passwords instead
+    enable_sso_idp_login: false # off on purpose: an unsolicited, IdP-initiated login drops Fleet's request-binding check
+    enable_jit_provisioning: true # Premium: create the account on first login; the role comes from the IdP's FLEET_JIT_USER_ROLE_GLOBAL attribute
+    idp_name: "Okta"
+    idp_image_url: "$FLEET_IDP_IMAGE_URL" # a repository secret: the public URL of the login-button logo
+    entity_id: "$FLEET_URL" # the Fleet server URL, a repository secret; must equal the Okta app's audience exactly (no trailing slash)
+    metadata_url: "$FLEET_OKTA_METADATA_URL" # a repository secret: it embeds the Okta org name and app key
 
   # Enroll secrets are not set here: Fleet's change-management settings
   # exclude them from GitOps by default (`gitops.exceptions.secrets: true`), and a
@@ -68,17 +70,19 @@ org_settings:
   mdm:
     ###########################################################
     # Single sign-on (SSO) to authenticate the person enrolling
-    # a device, during end user setup: an identity provider app
-    # separate from the admin one. Off: no identity provider is
-    # connected. To connect one, add end_user_authentication with
-    # idp_name, metadata_url (a repository secret) and entity_id,
-    # and turn it on per fleet with
+    # a device, during end user setup. A second Okta app, separate
+    # from the admin one above (the infrastructure repo's
+    # okta/enduser.tf). Turned on per fleet with
     # controls.setup_experience.enable_end_user_authentication.
     #
     # Read more:
     #   • https://fleetdm.com/docs/configuration/yaml-files#end-user-authentication
     #   • https://fleetdm.com/guides/setup-experience#require-idp-authentication
     ###########################################################
+    end_user_authentication:
+      idp_name: "Okta" # displayed to end users
+      metadata_url: "$FLEET_END_USER_OKTA_METADATA_URL" # a repository secret: it embeds the Okta org name and app key
+      entity_id: "fleet-end-users" # must equal the end-user Okta app's audience exactly
 
     ###########################################################
     # Uncomment when you are ready to start using zero-touch enrollment

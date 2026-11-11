@@ -38,14 +38,13 @@ controls:
     ###########################################################
     # Single sign-on (SSO) to authenticate end users during
     # first-time setup of new computers, with the IdP set in
-    # default.yml's end_user_authentication. Off while no identity
-    # provider is connected.
+    # default.yml's end_user_authentication.
     #
     # Read more:
     #   • https://fleetdm.com/docs/configuration/yaml-files#end-user-authentication
     #   • https://fleetdm.com/guides/setup-experience#require-idp-authentication
     ###########################################################
-    enable_end_user_authentication: false
+    enable_end_user_authentication: true
 
   ###########################################################
   # Configuration profiles
