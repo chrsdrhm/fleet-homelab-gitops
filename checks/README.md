@@ -6,6 +6,7 @@ Every check for this repo lives here, so it's all in one place and can be remove
 |---|---|---|
 | Private values | `private-values/check.py` (also the optional local hooks) | Fails if a change, file name, commit message, or PR title/body contains a private value. See below. |
 | Checker self-test | `tests/test_private_values.py` | Tests the private-values checker with phony values. |
+| gitops-validate | `run.sh` | Fleet's offline validator from the `fleet-gitops` skill (`.agents/skills/fleet-gitops/scripts/validate.py`): parses every YAML file, resolves `path:` and `paths:`, and checks labels, osquery tables, Fleet-maintained app slugs and profile structure. It downloads Fleet's osquery schema and app catalog, so it runs with an empty environment (no secrets). Fails on any FAIL. |
 | shellcheck | `run.sh` | Lints our scripts and hooks, and `.github/fleet-gitops/gitops.sh` (Fleet's scaffold). The shell in `.github/fleet-gitops/action.yml` isn't linted: actionlint doesn't read composite actions. |
 | actionlint | `run.sh` | Lints the workflow files, including the shell in `run:` blocks. |
 | zizmor | `run.sh`, `zizmor.yml` | Security audit of the workflows. Official image, pinned by digest. |
