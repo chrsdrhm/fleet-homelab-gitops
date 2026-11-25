@@ -1,6 +1,6 @@
 # Instructions for AI assistants
 
-Rules for any AI assistant working in or reviewing this repo (Claude Code, GitHub Copilot and others). People should start with the [README](README.md).
+Rules for any AI assistant working in or reviewing this repo (Claude Code, GitHub Copilot, Codex, Cursor, Gemini CLI and others). Claude Code reads it through `CLAUDE.md`, Gemini CLI through `GEMINI.md`. People should start with the [README](README.md).
 
 ## What this repo is
 
@@ -28,7 +28,7 @@ Follow Fleet's documented approach, and call out deviations.
 - **Never change identity-provider group membership.**
 - **Every change goes through a pull request.** `main` has no bypass. Branch from an up-to-date `origin/main`, and before adding commits to an existing branch, check that its pull request is still open. Merges are the owner's call.
 - **Remember that `default.yml` defines everything.** Anything not in this repo is removed from Fleet on apply, including fleets created only in the UI. GitOps mode is on, so the UI is read-only for what this repo manages; don't turn it off, or add UI exceptions, without the owner's say.
-- **Leave Fleet's scaffold alone:** `.github/fleet-gitops/` and the generated layout are Fleet's. Change them only on purpose, and say so.
+- **Leave Fleet's scaffold alone:** `.github/fleet-gitops/`, the `fleet-gitops` skill in `.agents/skills/` and `.claude/skills/`, and the generated layout are Fleet's. Change them only on purpose, and say so. The scaffold matches Fleet's template at `fleet-template: v4.96.0`; `/fleet-upgrade` in the infra repo compares against it.
 
 ## How to work here
 
@@ -37,13 +37,15 @@ Follow Fleet's documented approach, and call out deviations.
 
 ## Writing configuration here
 
-Adapted from the `CLAUDE.md` in Fleet's `fleetctl new` template.
+Adapted from the `AGENTS.md` in Fleet's `fleetctl new` template.
 - **Where things go:** add a policy, report, profile or script as a file in the matching `platforms/<platform>/<kind>/` folder, following an existing file there. A fleet's YAML picks files up with globs (for example `paths: ../platforms/macos/policies/*.yml`), so check its globs before wiring a file in by hand.
 - **Software:** prefer a [Fleet-maintained app](https://github.com/fleetdm/fleet/tree/main/ee/maintained-apps) (`fleet_maintained_apps` in a fleet's `software:` section) over a custom package when one exists.
 - **Targeting:** to scope something to part of a fleet, reference a label from `labels/*.yml` with `labels_include_any` or `labels_include_all`, rather than a new inline query.
 - **Validate before inventing:** keys and values against [Fleet's GitOps reference](https://fleetdm.com/docs/configuration/yaml-files); osquery tables and columns against [Fleet's schema](https://fleetdm.com/tables) for the target platform.
-- **The `/fleet-gitops` skill** (`.claude/skills/fleet-gitops/`, from the same template) checks queries, profiles, software and Apple declarations against those references before writing them. It's pre-approved to run `fleetctl gitops` only as a dry run; anything else asks for permission, and changes reach Fleet through a pull request.
+- **The `fleet-gitops` skill:** before changing anything that reaches devices, read `.agents/skills/fleet-gitops/SKILL.md` and follow it. It covers the layout rules `fleetctl gitops` enforces, per-platform references under `references/`, and an offline validator. Agents that follow the Agent Skills standard find it in `.agents/skills/`; Claude Code finds it through `.claude/skills/fleet-gitops/` (`/fleet-gitops`). Here it's pre-approved to run only its checks and `fleetctl gitops` as a dry run; anything else asks for permission, and changes reach Fleet through a pull request.
+- **Validate offline first:** `python3 .agents/skills/fleet-gitops/scripts/validate.py` from the repo root parses every YAML file, resolves `path:` and `paths:`, and checks labels, osquery tables, Fleet-maintained app slugs and profile structure. `checks/run.sh` runs it too. Fix every FAIL.
 - **Dry run locally,** the way CI does for a pull request (needs `fleetctl` configured for this Fleet): first export the variables the YAML references, `FLEET_URL`, `FLEET_GITOPS_REPO_URL`, `FLEET_OKTA_METADATA_URL`, `FLEET_END_USER_OKTA_METADATA_URL` and `FLEET_IDP_IMAGE_URL` (never paste their values into files here), then run `fleetctl gitops -f default.yml $(for f in fleets/*.yml; do echo -f "$f"; done) --delete-other-fleets --dry-run`.
+- **Apple profiles (optional):** [contour](https://github.com/macadmins/contour), a community CLI, validates `.mobileconfig` and DDM JSON against Apple's schema. It isn't part of Fleet and isn't installed by default.
 - **Terms:** a "fleet" was formerly a "team" (the API and some `fleetctl` flags still say `team`), and a "report" was formerly a "query" ("query" now means only the SQL inside a report or policy).
 
 ## When reviewing a pull request

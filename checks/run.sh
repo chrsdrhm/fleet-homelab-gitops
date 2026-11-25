@@ -3,7 +3,8 @@
 # all of them even if one fails, then prints a summary.
 #
 #   checks/run.sh            everything
-#   checks/run.sh NAME...    only some: private-values shellcheck actionlint zizmor
+#   checks/run.sh NAME...    only some: private-values gitops-validate shellcheck actionlint
+#                            zizmor
 #
 # Needs python3, shellcheck and git; actionlint from checks/install-tools.sh; Docker for
 # zizmor (skipped locally if Docker is not running; required in CI). A missing tool is
@@ -31,6 +32,19 @@ run() { # name, command...
 }
 selected=("$@")
 want() { [ "${#selected[@]}" -eq 0 ] && return 0; local s; for s in "${selected[@]}"; do [ "$s" = "$1" ] && return 0; done; return 1; }
+
+# Fleet's offline validator for the YAML, from the fleet-gitops skill. It downloads Fleet's
+# osquery schema and app catalog (cached for a week), so it runs with an empty environment:
+# no secrets reach it, and its cache stays in a temporary folder.
+gitops_validate() {
+  local tmp status
+  tmp=$(mktemp -d)
+  env -i PATH="$PATH" HOME="$tmp" XDG_CACHE_HOME="$tmp/cache" \
+    python3 -I .agents/skills/fleet-gitops/scripts/validate.py .
+  status=$?
+  rm -rf "$tmp"
+  return "$status"
+}
 
 private_values() {
   python3 "$checks/tests/test_private_values.py" || return 1
@@ -73,6 +87,7 @@ zizmor() {
 }
 
 want private-values && run private-values private_values
+want gitops-validate && run gitops-validate gitops_validate
 want shellcheck     && run shellcheck shellcheck "$checks"/*.sh "$checks"/hooks/* .github/fleet-gitops/gitops.sh
 want actionlint     && run actionlint actionlint
 want zizmor         && TOOL=docker run zizmor zizmor

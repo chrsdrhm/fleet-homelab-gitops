@@ -8,3 +8,8 @@ Claude Code versions read only CLAUDE.md. This import makes Claude get AGENTS.md
 either way. Instructions only Claude should see can go below the import.
 -->
 @AGENTS.md
+
+## Claude Code notes
+
+- The repository's agent instructions live in `AGENTS.md`, imported above, so Claude Code and the other agents follow the same rules.
+- The `fleet-gitops` skill is registered under `.claude/skills/fleet-gitops/` and hands off to the full skill in `.agents/skills/fleet-gitops/`. Invoke it with `/fleet-gitops`, or let it trigger on its own for GitOps work.
